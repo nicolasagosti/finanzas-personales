@@ -1,27 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { matchCategory, parseMessage } from "./telegram-parse";
+import { parseMessage, resolveCategory, wordMatchesName } from "./telegram-parse";
 
 const TODAY = "2026-09-28";
 
 describe("parseMessage", () => {
   it.each([
-    ["café 2500", { type: "expense", cents: 250000, description: "Café", date: TODAY }],
-    ["2500 café", { type: "expense", cents: 250000, description: "Café" }],
-    ["super 84.320,50", { type: "expense", cents: 8432050, description: "Super" }],
-    ["12 lucas nafta", { type: "expense", cents: 1200000, description: "Nafta" }],
-    ["nafta 12k", { type: "expense", cents: 1200000, description: "Nafta" }],
-    ["1,5k helado", { type: "expense", cents: 150000, description: "Helado" }],
-    ["gasté 3000 en el kiosco", { type: "expense", cents: 300000, description: "Kiosco" }],
-    ["pagué $ 45.000 de luz", { type: "expense", cents: 4500000, description: "Luz" }],
-    ["verdulería 5400 ayer", { type: "expense", description: "Verdulería", date: "2026-09-27" }],
-    ["anteayer 800 sube", { type: "expense", description: "Sube", date: "2026-09-26" }],
-    ["+150000 sueldo", { type: "income", cents: 15000000, description: "Sueldo" }],
-    ["sueldo 2.650.000", { type: "income", cents: 265000000, description: "Sueldo" }],
-    ["ingreso 20000 venta de la bici", { type: "income", cents: 2000000, description: "Venta de la bici" }],
-    ["cobré 50 lucas proyecto", { type: "income", cents: 5000000, description: "Proyecto" }],
-    ["3500 regalo #compras", { type: "expense", cents: 350000, description: "Regalo", hashtag: "compras" }],
-    ["-1200 café", { type: "expense", cents: 120000, description: "Café" }],
-    ["2500", { type: "expense", cents: 250000, description: null }],
+    ["5000 comida", { type: "expense", typeExplicit: false, cents: 500000, words: ["comida"], date: TODAY }],
+    ["5000 comida pizza con amigos", { cents: 500000, words: ["comida", "pizza", "con", "amigos"] }],
+    ["comida 5000", { cents: 500000, words: ["comida"] }],
+    ["super 84.320,50", { cents: 8432050, words: ["super"] }],
+    ["12 lucas nafta ayer", { cents: 1200000, words: ["nafta"], date: "2026-09-27" }],
+    ["nafta 12k", { cents: 1200000, words: ["nafta"] }],
+    ["1,5k helado", { cents: 150000, words: ["helado"] }],
+    ["gasté 3000 en el kiosco", { type: "expense", typeExplicit: true, words: ["kiosco"] }],
+    ["anteayer 800 sube", { words: ["sube"], date: "2026-09-26" }],
+    ["ingreso 500000", { type: "income", typeExplicit: true, cents: 50000000, words: [] }],
+    ["ingreso 500000 sueldo", { type: "income", typeExplicit: true, words: ["sueldo"] }],
+    ["500000 ingreso", { type: "income", typeExplicit: true, words: [] }],
+    ["+150000 sueldo", { type: "income", typeExplicit: true, words: ["sueldo"] }],
+    ["150000 sueldo", { type: "income", typeExplicit: false, words: ["sueldo"] }],
+    ["cobré 50 lucas proyecto", { type: "income", cents: 5000000, words: ["proyecto"] }],
+    ["3500 regalo #compras", { words: ["regalo"], hashtag: "compras" }],
+    ["-1200 café", { type: "expense", typeExplicit: true, words: ["café"] }],
+    ["2500", { type: "expense", words: [] }],
   ])("%s", (text, expected) => {
     expect(parseMessage(text, TODAY)).toMatchObject({ kind: "movement", ...expected });
   });
@@ -36,7 +37,22 @@ describe("parseMessage", () => {
   });
 });
 
-describe("matchCategory", () => {
+describe("wordMatchesName", () => {
+  it.each([
+    ["comida", "Comida afuera", true],
+    ["super", "Supermercado", true],
+    ["comdia", "Comida afuera", true], // error de tipeo
+    ["trasnporte", "Transporte", true],
+    ["salidas", "Salidas y suscripciones", true],
+    ["salud", "Salidas y suscripciones", false],
+    ["gas", "Vivienda", false],
+    ["otros", "Otros gastos", true], // nombre completo empieza igual
+  ])("%s ~ %s → %s", (word, name, expected) => {
+    expect(wordMatchesName(word, name)).toBe(expected);
+  });
+});
+
+describe("resolveCategory", () => {
   const categories = [
     { id: "viv", name: "Vivienda", kind: "expense" },
     { id: "sup", name: "Supermercado", kind: "expense" },
@@ -47,30 +63,48 @@ describe("matchCategory", () => {
     { id: "sue", name: "Sueldo", kind: "income" },
     { id: "otr", name: "Otros ingresos", kind: "income" },
   ];
-  const m = (description: string | null, type: "income" | "expense" = "expense", extra: object = {}) =>
-    matchCategory({ description, hashtag: null, type, categories, ...extra });
+  const r = (text: string, learnedId?: string) => {
+    const p = parseMessage(text, TODAY);
+    if (p.kind !== "movement") throw new Error("no es movimiento");
+    return resolveCategory({ ...p, categories, learnedId });
+  };
 
-  it("por nombre de la categoría (aunque esté abreviado)", () => {
-    expect(m("Super")).toEqual({ id: "sup", how: "name" });
-    expect(m("Salida con amigos")).toEqual({ id: "sal", how: "name" });
+  it("la palabra después del monto es la categoría", () => {
+    expect(r("5000 comida")).toEqual({ type: "expense", category: { kind: "existing", id: "com", how: "name" }, description: "Comida" });
+    expect(r("5000 comida pizza con amigos")).toMatchObject({ category: { id: "com" }, description: "Pizza con amigos" });
+    expect(r("5000 comdia")).toMatchObject({ category: { id: "com" } });
+    expect(r("5000 super")).toMatchObject({ category: { id: "sup", how: "name" } });
   });
 
-  it("por palabras clave", () => {
-    expect(m("Café")).toEqual({ id: "com", how: "keyword" });
-    expect(m("Nafta")).toEqual({ id: "tra", how: "keyword" });
-    expect(m("Luz")).toEqual({ id: "viv", how: "keyword" });
-    expect(m("Venta de la bici", "income")).toEqual({ id: "otr", how: "keyword" });
+  it("acepta el nombre completo de varias palabras", () => {
+    expect(r("5000 comida afuera pizza")).toMatchObject({ category: { id: "com" }, description: "Pizza" });
   });
 
-  it("el #hashtag gana y lo aprendido le gana al nombre y a las palabras clave", () => {
-    expect(m("Café", "expense", { hashtag: "ropa" })).toEqual({ id: "rop", how: "hashtag" });
-    expect(m("Café", "expense", { learnedId: "sal" })).toEqual({ id: "sal", how: "learned" });
+  it("sinónimos: nafta es Transporte, café es Comida afuera", () => {
+    expect(r("12 lucas nafta")).toMatchObject({ category: { id: "tra", how: "keyword" }, description: "Nafta" });
+    expect(r("2500 café")).toMatchObject({ category: { id: "com", how: "keyword" } });
   });
 
-  it("no mezcla ingresos con egresos ni inventa categorías", () => {
-    expect(m("Sueldo", "expense")).toEqual({ id: null, how: null });
-    expect(m("Veterinaria")).toEqual({ id: null, how: null });
-    expect(m(null)).toEqual({ id: null, how: null });
-    expect(m("Café", "expense", { learnedId: "sue" })).toEqual({ id: "com", how: "keyword" });
+  it("si la categoría no existe, la crea", () => {
+    expect(r("3500 veterinaria")).toEqual({ type: "expense", category: { kind: "create", name: "Veterinaria" }, description: "Veterinaria" });
+    expect(r("3500 regalo #mascotas")).toMatchObject({ category: { kind: "create", name: "Mascotas" }, description: "Regalo" });
+  });
+
+  it("ingreso sin categoría va a la categoría por defecto, sin preguntar", () => {
+    expect(r("ingreso 500000")).toEqual({ type: "income", category: { kind: "default" }, description: null });
+    expect(r("ingreso 500000 sueldo")).toMatchObject({ type: "income", category: { id: "sue" } });
+  });
+
+  it("sin aclarar el tipo, una categoría de ingreso lo vuelve ingreso", () => {
+    expect(r("150000 sueldo")).toMatchObject({ type: "income", category: { id: "sue" } });
+  });
+
+  it("lo aprendido le gana a los sinónimos, pero no al nombre de una categoría", () => {
+    expect(r("12 lucas nafta", "viv")).toMatchObject({ category: { id: "viv", how: "learned" } });
+    expect(r("5000 comida", "viv")).toMatchObject({ category: { id: "com", how: "name" } });
+  });
+
+  it("egreso sin categoría va a la categoría por defecto", () => {
+    expect(r("2500")).toEqual({ type: "expense", category: { kind: "default" }, description: null });
   });
 });

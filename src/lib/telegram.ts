@@ -6,7 +6,8 @@ import { dayLabel, monthLabelLong, monthStart, todayISO, addDays } from "@/lib/d
 import { insertTransactions, simpleTransaction } from "@/lib/ledger";
 import { formatMoney } from "@/lib/money";
 import { listCategories, monthlyFlows, totalsByCategory } from "@/lib/reports";
-import { matchCategory, parseMessage, type ParsedMessage } from "@/lib/telegram-parse";
+import { nextColor } from "@/lib/colors";
+import { capitalize, parseMessage, resolveCategory, type ParsedMessage } from "@/lib/telegram-parse";
 
 /**
  * Bot de Telegram para cargar movimientos escribiendo "café 2500".
@@ -85,13 +86,15 @@ export type TelegramUpdate = {
 
 export type TelegramReply = { chat_id: number; text: string };
 
-const HELP = `Mandame tus movimientos así:
+const HELP = `Mandame tus movimientos así:  monto + categoría
 
-• café 2500
-• super 84.320 ayer
-• 12 lucas nafta
-• +150000 sueldo  → ingreso
-• 3500 regalo #compras  → elegís la categoría
+• 5000 comida
+• 5000 comida pizza con amigos  → con detalle
+• 12 lucas nafta ayer
+• ingreso 500000  → ingreso, sin categoría
+• ingreso 500000 sueldo
+
+Si no aclarás nada, es un egreso. Si la categoría no existe, la creo.
 
 Comandos:
 /resumen · cómo vas este mes
@@ -191,6 +194,23 @@ function dateText(date: string): string {
   return dayLabel(date);
 }
 
+async function createCategory(q: Queryable, userId: string, name: string, type: "income" | "expense"): Promise<{ id: string; name: string }> {
+  const [existing] = await q.query<{ id: string; name: string }>(
+    "select id, name from accounts where kind = $1::account_kind and lower(name) = lower($2) and currency = 'ARS'",
+    [type, name],
+  );
+  if (existing) return existing;
+  const used = await q.query<{ color: string | null }>(
+    "select color from accounts where kind = $1::account_kind and not is_system",
+    [type],
+  );
+  const [created] = await q.query<{ id: string }>(
+    "insert into accounts (user_id, name, kind, color) values ($1, $2, $3, $4) returning id",
+    [userId, name, type, nextColor(used.map((u) => u.color))],
+  );
+  return { id: created.id, name };
+}
+
 async function createMovement(
   userId: string,
   p: Extract<ParsedMessage, { kind: "movement" }>,
@@ -198,30 +218,41 @@ async function createMovement(
 ): Promise<string> {
   return withUser(userId, async (q) => {
     const categories = await listCategories(q);
-    // "Aprende": si ya cargó algo con la misma descripción, usa la misma categoría
-    const [learned] = p.description
+    // "Aprende": si antes cargó un movimiento con esta misma palabra, usa esa categoría
+    const [learned] = p.words.length
       ? await q.query<{ id: string }>(
           `select c.account_id as id
            from transactions t
            join postings c on c.transaction_id = t.id
            join accounts a on a.id = c.account_id
-           where a.kind = $1::account_kind and lower(t.description) = lower($2)
+           where a.kind in ('income', 'expense') and lower(t.description) = lower($1)
            order by t.occurred_on desc, t.created_at desc
            limit 1`,
-          [p.type, p.description],
+          [capitalize(p.words[0])],
         )
       : [];
-    const match = matchCategory({ description: p.description, hashtag: p.hashtag, type: p.type, categories, learnedId: learned?.id });
-    const category = match.id
-      ? categories.find((c) => c.id === match.id)!
-      : await fallbackCategory(q, userId, p.type);
 
-    const description = p.description ?? category.name;
+    const r = resolveCategory({
+      words: p.words,
+      hashtag: p.hashtag,
+      type: p.type,
+      typeExplicit: p.typeExplicit,
+      categories,
+      learnedId: learned?.id,
+    });
+    const category =
+      r.category.kind === "existing"
+        ? categories.find((c) => c.id === (r.category as { id: string }).id)!
+        : r.category.kind === "create"
+          ? await createCategory(q, userId, r.category.name, r.type)
+          : await fallbackCategory(q, userId, r.type);
+
+    const description = r.description ?? category.name;
     const { inserted } = await insertTransactions(q, userId, [
       simpleTransaction({
         date: p.date,
         description,
-        amount: p.type === "income" ? p.cents : -p.cents,
+        amount: r.type === "income" ? p.cents : -p.cents,
         moneyAccountId: await moneyAccountId(q, userId),
         categoryAccountId: category.id,
         source: "telegram",
@@ -231,12 +262,11 @@ async function createMovement(
     if (!inserted) return "Ese movimiento ya estaba cargado 👍";
 
     const lines = [
-      `${p.type === "income" ? "💰 Ingreso" : "✅ Egreso"} cargado`,
+      `${r.type === "income" ? "💰 Ingreso" : "✅ Egreso"} cargado`,
       `${formatMoney(p.cents, "ARS", { decimals: p.cents % 100 !== 0 })} · ${category.name}`,
       `${description} · ${dateText(p.date)}`,
     ];
-    if (!match.id) lines.push("", "No reconocí la categoría. Podés elegirla con #categoria, por ejemplo: 3500 regalo #compras");
-    if (p.hashtag && match.how !== "hashtag") lines.push("", `No encontré la categoría #${p.hashtag}.`);
+    if (r.category.kind === "create") lines.push("", `🆕 Creé la categoría "${category.name}".`);
     lines.push("", "/deshacer si algo salió mal");
     return lines.join("\n");
   });

@@ -11,7 +11,7 @@ Por dentro es más seria de lo que parece: **libro contable de doble entrada** e
 - **Resumen:** ingresos, egresos y balance del mes; barras de ingresos contra egresos de los últimos 12 meses; donas de colores con los egresos y los ingresos por categoría. Tocar una categoría lleva a sus movimientos.
 - **Movimientos:** alta en segundos (tipo, monto, fecha, descripción y categoría), búsqueda, filtros por mes, tipo y categoría, cambio de categoría y borrado.
 - **Categorías:** cada una con un color propio que se usa en todos los gráficos; se puede cambiar desde una paleta.
-- **Telegram:** le escribís al bot `café 2500`, `12 lucas nafta` o `+150000 sueldo` y lo carga al instante. Entiende "ayer", "lucas", "k" y `#categoría`, aprende de tus recategorizaciones y tiene `/resumen` y `/deshacer`.
+- **Telegram:** le escribís al bot *monto + categoría* (`5000 comida`, `5000 comida pizza`, `ingreso 500000`) y lo carga al instante. Si no aclarás es egreso; los ingresos sin categoría van directo a "Otros ingresos". Reconoce la categoría aunque esté abreviada o mal escrita, entiende "ayer", "lucas" y "k", crea la categoría si no existe, aprende de tus recategorizaciones y tiene `/resumen` y `/deshacer`.
 - **Seguridad y cuenta:** pruebas en vivo que intentan romper el aislamiento y la contabilidad contra la base, registro de auditoría y **eliminar mi cuenta**.
 - **Acceso:** demo aislada, login con Google o espacio sin cuenta atado al navegador.
 
@@ -70,7 +70,7 @@ El flujo es OpenID Connect con Authorization Code + **PKCE** (S256), `state` y `
 2. Cargá `TELEGRAM_BOT_TOKEN` (y `APP_URL` con tu dominio de producción) en Vercel y volvé a desplegar.
 3. En la app, **Telegram → Vincular mi Telegram**: registra el webhook solo y abre el chat con un código de un solo uso.
 
-El webhook se valida con el header `X-Telegram-Bot-Api-Secret-Token` (derivado de `SESSION_SECRET` con HMAC). Cada mensaje usa su `update_id` como huella, así que si Telegram reintenta un envío el movimiento no se duplica. La respuesta viaja en el cuerpo del webhook (método `sendMessage`), sin llamadas extra a la API. Los mensajes se interpretan con reglas simples, sin IA: monto (formato argentino, "lucas", "k"), fecha relativa, `#categoría`, lo que usaste antes para esa misma descripción y palabras clave por categoría.
+El webhook se valida con el header `X-Telegram-Bot-Api-Secret-Token` (derivado de `SESSION_SECRET` con HMAC). Cada mensaje usa su `update_id` como huella, así que si Telegram reintenta un envío el movimiento no se duplica. La respuesta viaja en el cuerpo del webhook (método `sendMessage`), sin llamadas extra a la API. Los mensajes se interpretan con reglas simples, sin IA, con el formato `[ingreso] <monto> <categoría> [detalle] [ayer]`. La categoría se resuelve en este orden: `#categoría` explícita, nombre de una categoría existente (prefijo o distancia de Levenshtein para errores de tipeo), lo que usaste antes para esa palabra, sinónimos ("nafta" → Transporte) y, si nada coincide, una categoría nueva.
 
 ## Arquitectura
 
@@ -87,7 +87,7 @@ src/
 │   ├── colors.ts             # paleta de categorías
 │   ├── google-oauth.ts       # OIDC: PKCE, state, nonce, verificación del id_token
 │   ├── telegram.ts           # bot: vinculación, alta idempotente, /resumen, /deshacer
-│   ├── telegram-parse.ts     # "12 lucas nafta ayer" → monto, fecha, descripción, categoría
+│   ├── telegram-parse.ts     # "12 lucas nafta ayer" → monto, fecha, categoría y detalle
 │   └── reports.ts            # reportes (ninguna query filtra por user_id: lo hace RLS)
 └── app/
     ├── login/ · privacidad/  # públicas

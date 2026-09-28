@@ -10,11 +10,12 @@ import { TelegramLinker, UnlinkButton } from "./linker";
 export const metadata: Metadata = { title: "Telegram" };
 
 const EXAMPLES: [string, string][] = [
-  ["café 2500", "Egreso de $ 2.500 en Comida afuera"],
-  ["super 84.320 ayer", "Egreso de ayer en Supermercado"],
-  ["12 lucas nafta", "Egreso de $ 12.000 en Transporte"],
-  ["+150000 sueldo", "Ingreso de $ 150.000 en Sueldo"],
-  ["3500 regalo #compras", "Elegís la categoría con #"],
+  ["5000 comida", "Egreso de $ 5.000 en Comida afuera"],
+  ["5000 comida pizza", "Con detalle: “Pizza”"],
+  ["12 lucas nafta ayer", "Egreso de ayer en Transporte"],
+  ["ingreso 500000", "Ingreso, sin pedir categoría"],
+  ["ingreso 500000 sueldo", "Ingreso en Sueldo"],
+  ["3500 veterinaria", "Si la categoría no existe, la crea"],
 ];
 
 export default async function TelegramPage() {
@@ -62,7 +63,9 @@ export default async function TelegramPage() {
           <Card>
             <CardHeader>
               <CardTitle>Cómo escribirle</CardTitle>
-              <CardDescription>Monto y descripción, en cualquier orden. Si no decís la fecha, es hoy.</CardDescription>
+              <CardDescription>
+                Monto y después la categoría. Si no aclarás nada es un egreso; si no decís la fecha, es hoy.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="flex flex-col gap-2.5">
@@ -75,7 +78,8 @@ export default async function TelegramPage() {
               </ul>
               <p className="mt-4 text-sm text-muted-foreground">
                 Comandos: <code>/resumen</code> para ver cómo vas en el mes y <code>/deshacer</code> para borrar lo último
-                que cargaste. Si recategorizás un movimiento en la app, el bot lo aprende para la próxima.
+                que cargaste. La categoría se reconoce aunque la abrevies o tenga un error de tipeo, y si recategorizás un
+                movimiento en la app, el bot lo aprende para la próxima.
               </p>
             </CardContent>
           </Card>

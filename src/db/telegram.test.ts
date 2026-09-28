@@ -100,23 +100,46 @@ describe("carga de movimientos", () => {
     expect(m.occurred_on < new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date())).toBe(true);
   });
 
-  it("sin categoría reconocible va a 'Otros gastos' y lo avisa", async () => {
-    const r = await send("veterinaria 8000");
-    expect(r?.text).toMatch(/No reconocí la categoría/);
-    expect(await lastMovement()).toMatchObject({ category: "Otros gastos" });
+  it("la palabra después del monto es la categoría", async () => {
+    await send("5000 comida");
+    expect(await lastMovement()).toMatchObject({ description: "Comida", amount: -500000, category: "Comida afuera" });
+    await send("5000 comida pizza con amigos");
+    expect(await lastMovement()).toMatchObject({ description: "Pizza con amigos", category: "Comida afuera" });
+  });
+
+  it("ingreso sin categoría se carga directo en 'Otros ingresos'", async () => {
+    const r = await send("ingreso 500000");
+    expect(r?.text).toMatch(/Ingreso cargado/);
+    expect(r?.text).not.toMatch(/categor/i);
+    expect(await lastMovement()).toMatchObject({ amount: 50000000, category: "Otros ingresos" });
+  });
+
+  it("si la categoría no existe, la crea con color y lo avisa", async () => {
+    const r = await send("8000 veterinaria");
+    expect(r?.text).toMatch(/Creé la categoría "Veterinaria"/);
+    expect(await lastMovement()).toMatchObject({ category: "Veterinaria", amount: -800000 });
+    const [cat] = await withUser(user.userId, (q) =>
+      q.query<{ color: string | null; kind: string }>("select color, kind::text as kind from accounts where name = 'Veterinaria'"),
+    );
+    expect(cat).toMatchObject({ kind: "expense" });
+    expect(cat.color).toBeTruthy();
+    // la segunda vez ya existe: no la vuelve a crear
+    expect((await send("veterinaria 1500"))?.text).not.toMatch(/Creé/);
   });
 
   it("aprende: si recategorizás en la app, la próxima vez usa esa categoría", async () => {
+    await send("3000 nafta");
+    expect(await lastMovement()).toMatchObject({ category: "Transporte" });
     await withUser(user.userId, (q) =>
       q.query(
         `update postings p set account_id = $1
          from transactions t, accounts a
-         where p.transaction_id = t.id and a.id = p.account_id and a.kind = 'expense' and t.description = 'Veterinaria'`,
-        [user.accounts.salud],
+         where p.transaction_id = t.id and a.id = p.account_id and a.kind = 'expense' and t.description = 'Nafta'`,
+        [user.accounts.vivienda],
       ),
     );
-    await send("veterinaria 12000");
-    expect(await lastMovement()).toMatchObject({ category: "Salud", amount: -1200000 });
+    await send("nafta 12000");
+    expect(await lastMovement()).toMatchObject({ category: "Vivienda", amount: -1200000 });
   });
 
   it("#categoría elige explícitamente", async () => {
