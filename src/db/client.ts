@@ -162,6 +162,11 @@ const globalForDb = globalThis as unknown as { __finanzasDb?: Promise<Driver> };
 export function getDb(): Promise<Driver> {
   if (!globalForDb.__finanzasDb) {
     const url = process.env.DATABASE_URL;
+    if (!url && process.env.VERCEL) {
+      return Promise.reject(
+        new Error("Falta configurar DATABASE_URL: en Vercel no se puede usar la base local (disco de solo lectura)."),
+      );
+    }
     globalForDb.__finanzasDb = (async () => {
       const db = url ? await createPostgres(url) : await createPGlite();
       await migrate(db);

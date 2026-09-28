@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import { ArrowRight, BookOpenCheck, FileUp, LineChart, ShieldCheck, Wallet } from "lucide-react";
+import { BookOpenCheck, FileUp, LineChart, ShieldCheck, Wallet } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { SubmitButton } from "@/components/submit-button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { startDemo, startEmpty } from "./actions";
+import { DemoForm, EmptySpaceForm } from "./forms";
 
 export const metadata: Metadata = { title: "Ingresar" };
 
@@ -80,27 +77,11 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
-            <form action={startDemo}>
-              <SubmitButton size="lg" className="h-11 w-full text-base" pendingText="Generando 12 meses de datos…">
-                Entrar a la demo <ArrowRight />
-              </SubmitButton>
-            </form>
+            <DemoForm />
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <Separator className="flex-1" /> o empezá de cero <Separator className="flex-1" />
             </div>
-            <form action={startEmpty} className="flex flex-col gap-3">
-              <div className="grid gap-1.5">
-                <Label htmlFor="name">Tu nombre</Label>
-                <Input id="name" name="name" placeholder="Ej.: Nico" maxLength={60} autoComplete="given-name" />
-              </div>
-              <SubmitButton variant="outline" className="h-10" pendingText="Creando tu espacio…">
-                Crear mi espacio vacío
-              </SubmitButton>
-              <p className="text-xs text-muted-foreground">
-                El espacio queda asociado a este navegador por 30 días. Ver README para conectar
-                OAuth o passkeys en producción.
-              </p>
-            </form>
+            <EmptySpaceForm />
           </CardContent>
         </Card>
       </div>
