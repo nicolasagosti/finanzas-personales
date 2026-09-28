@@ -1,0 +1,862 @@
+{
+ "generatedAt": "2026-09-28T16:34:59.369Z",
+ "sources": {
+  "cpi": "INDEC — IPC Nacional nivel general, base dic-2016 (apis.datos.gob.ar, serie 148.3_INIVELNAL_DICI_M_26)",
+  "fx": "argentinadatos.com — promedio mensual del valor de venta (oficial, MEP/bolsa, blue)"
+ },
+ "cpi": [
+  {
+   "month": "2023-01-01",
+   "value": 1202.979
+  },
+  {
+   "month": "2023-02-01",
+   "value": 1282.7091
+  },
+  {
+   "month": "2023-03-01",
+   "value": 1381.1601
+  },
+  {
+   "month": "2023-04-01",
+   "value": 1497.2147
+  },
+  {
+   "month": "2023-05-01",
+   "value": 1613.5895
+  },
+  {
+   "month": "2023-06-01",
+   "value": 1709.6115
+  },
+  {
+   "month": "2023-07-01",
+   "value": 1818.0838
+  },
+  {
+   "month": "2023-08-01",
+   "value": 2044.2832
+  },
+  {
+   "month": "2023-09-01",
+   "value": 2304.9242
+  },
+  {
+   "month": "2023-10-01",
+   "value": 2496.273
+  },
+  {
+   "month": "2023-11-01",
+   "value": 2816.0628
+  },
+  {
+   "month": "2023-12-01",
+   "value": 3533.1922
+  },
+  {
+   "month": "2024-01-01",
+   "value": 4261.5324
+  },
+  {
+   "month": "2024-02-01",
+   "value": 4825.7881
+  },
+  {
+   "month": "2024-03-01",
+   "value": 5357.0929
+  },
+  {
+   "month": "2024-04-01",
+   "value": 5830.2271
+  },
+  {
+   "month": "2024-05-01",
+   "value": 6073.7
+  },
+  {
+   "month": "2024-06-01",
+   "value": 6351.7145
+  },
+  {
+   "month": "2024-07-01",
+   "value": 6607.7479
+  },
+  {
+   "month": "2024-08-01",
+   "value": 6883.4412
+  },
+  {
+   "month": "2024-09-01",
+   "value": 7122.2421
+  },
+  {
+   "month": "2024-10-01",
+   "value": 7313.9542
+  },
+  {
+   "month": "2024-11-01",
+   "value": 7491.4314
+  },
+  {
+   "month": "2024-12-01",
+   "value": 7694.0075
+  },
+  {
+   "month": "2025-01-01",
+   "value": 7864.1257
+  },
+  {
+   "month": "2025-02-01",
+   "value": 8052.9927
+  },
+  {
+   "month": "2025-03-01",
+   "value": 8353.3158
+  },
+  {
+   "month": "2025-04-01",
+   "value": 8585.6078
+  },
+  {
+   "month": "2025-05-01",
+   "value": 8714.4871
+  },
+  {
+   "month": "2025-06-01",
+   "value": 8855.5681
+  },
+  {
+   "month": "2025-07-01",
+   "value": 9023.973
+  },
+  {
+   "month": "2025-08-01",
+   "value": 9193.2441
+  },
+  {
+   "month": "2025-09-01",
+   "value": 9384.0922
+  },
+  {
+   "month": "2025-10-01",
+   "value": 9603.8623
+  },
+  {
+   "month": "2025-11-01",
+   "value": 9841.3581
+  },
+  {
+   "month": "2025-12-01",
+   "value": 10121.3715
+  },
+  {
+   "month": "2026-01-01",
+   "value": 10413.0309
+  },
+  {
+   "month": "2026-02-01",
+   "value": 10714.6255
+  },
+  {
+   "month": "2026-03-01",
+   "value": 11077.0608
+  },
+  {
+   "month": "2026-04-01",
+   "value": 11363.0904
+  },
+  {
+   "month": "2026-05-01",
+   "value": 11607.3937
+  },
+  {
+   "month": "2026-06-01",
+   "value": 11826.4103
+  },
+  {
+   "month": "2026-07-01",
+   "value": 12076.3937
+  },
+  {
+   "month": "2026-08-01",
+   "value": 12276.766
+  }
+ ],
+ "fx": [
+  {
+   "month": "2023-01-01",
+   "kind": "oficial",
+   "arsPerUsd": 189.55
+  },
+  {
+   "month": "2023-02-01",
+   "kind": "oficial",
+   "arsPerUsd": 199.29
+  },
+  {
+   "month": "2023-03-01",
+   "kind": "oficial",
+   "arsPerUsd": 210.23
+  },
+  {
+   "month": "2023-04-01",
+   "kind": "oficial",
+   "arsPerUsd": 223
+  },
+  {
+   "month": "2023-05-01",
+   "kind": "oficial",
+   "arsPerUsd": 241.61
+  },
+  {
+   "month": "2023-06-01",
+   "kind": "oficial",
+   "arsPerUsd": 260.53
+  },
+  {
+   "month": "2023-07-01",
+   "kind": "oficial",
+   "arsPerUsd": 279.26
+  },
+  {
+   "month": "2023-08-01",
+   "kind": "oficial",
+   "arsPerUsd": 336.77
+  },
+  {
+   "month": "2023-09-01",
+   "kind": "oficial",
+   "arsPerUsd": 366.76
+  },
+  {
+   "month": "2023-10-01",
+   "kind": "oficial",
+   "arsPerUsd": 367.88
+  },
+  {
+   "month": "2023-11-01",
+   "kind": "oficial",
+   "arsPerUsd": 369.47
+  },
+  {
+   "month": "2023-12-01",
+   "kind": "oficial",
+   "arsPerUsd": 655.78
+  },
+  {
+   "month": "2024-01-01",
+   "kind": "oficial",
+   "arsPerUsd": 837.4
+  },
+  {
+   "month": "2024-02-01",
+   "kind": "oficial",
+   "arsPerUsd": 853.02
+  },
+  {
+   "month": "2024-03-01",
+   "kind": "oficial",
+   "arsPerUsd": 869.55
+  },
+  {
+   "month": "2024-04-01",
+   "kind": "oficial",
+   "arsPerUsd": 887.07
+  },
+  {
+   "month": "2024-05-01",
+   "kind": "oficial",
+   "arsPerUsd": 904.79
+  },
+  {
+   "month": "2024-06-01",
+   "kind": "oficial",
+   "arsPerUsd": 922.38
+  },
+  {
+   "month": "2024-07-01",
+   "kind": "oficial",
+   "arsPerUsd": 941.73
+  },
+  {
+   "month": "2024-08-01",
+   "kind": "oficial",
+   "arsPerUsd": 961.21
+  },
+  {
+   "month": "2024-09-01",
+   "kind": "oficial",
+   "arsPerUsd": 981.27
+  },
+  {
+   "month": "2024-10-01",
+   "kind": "oficial",
+   "arsPerUsd": 1000.92
+  },
+  {
+   "month": "2024-11-01",
+   "kind": "oficial",
+   "arsPerUsd": 1020.92
+  },
+  {
+   "month": "2024-12-01",
+   "kind": "oficial",
+   "arsPerUsd": 1041.55
+  },
+  {
+   "month": "2025-01-01",
+   "kind": "oficial",
+   "arsPerUsd": 1062.48
+  },
+  {
+   "month": "2025-02-01",
+   "kind": "oficial",
+   "arsPerUsd": 1077.76
+  },
+  {
+   "month": "2025-03-01",
+   "kind": "oficial",
+   "arsPerUsd": 1088.38
+  },
+  {
+   "month": "2025-04-01",
+   "kind": "oficial",
+   "arsPerUsd": 1140.9
+  },
+  {
+   "month": "2025-05-01",
+   "kind": "oficial",
+   "arsPerUsd": 1166.29
+  },
+  {
+   "month": "2025-06-01",
+   "kind": "oficial",
+   "arsPerUsd": 1196.17
+  },
+  {
+   "month": "2025-07-01",
+   "kind": "oficial",
+   "arsPerUsd": 1284.03
+  },
+  {
+   "month": "2025-08-01",
+   "kind": "oficial",
+   "arsPerUsd": 1340.65
+  },
+  {
+   "month": "2025-09-01",
+   "kind": "oficial",
+   "arsPerUsd": 1420.5
+  },
+  {
+   "month": "2025-10-01",
+   "kind": "oficial",
+   "arsPerUsd": 1463.39
+  },
+  {
+   "month": "2025-11-01",
+   "kind": "oficial",
+   "arsPerUsd": 1453.67
+  },
+  {
+   "month": "2025-12-01",
+   "kind": "oficial",
+   "arsPerUsd": 1471.13
+  },
+  {
+   "month": "2026-01-01",
+   "kind": "oficial",
+   "arsPerUsd": 1472.74
+  },
+  {
+   "month": "2026-02-01",
+   "kind": "oficial",
+   "arsPerUsd": 1426.96
+  },
+  {
+   "month": "2026-03-01",
+   "kind": "oficial",
+   "arsPerUsd": 1416.29
+  },
+  {
+   "month": "2026-04-01",
+   "kind": "oficial",
+   "arsPerUsd": 1406.17
+  },
+  {
+   "month": "2026-05-01",
+   "kind": "oficial",
+   "arsPerUsd": 1420.16
+  },
+  {
+   "month": "2026-06-01",
+   "kind": "oficial",
+   "arsPerUsd": 1469.63
+  },
+  {
+   "month": "2026-07-01",
+   "kind": "oficial",
+   "arsPerUsd": 1508.71
+  },
+  {
+   "month": "2026-08-01",
+   "kind": "oficial",
+   "arsPerUsd": 1520.16
+  },
+  {
+   "month": "2026-09-01",
+   "kind": "oficial",
+   "arsPerUsd": 1534.29
+  },
+  {
+   "month": "2023-01-01",
+   "kind": "mep",
+   "arsPerUsd": 341.39
+  },
+  {
+   "month": "2023-02-01",
+   "kind": "mep",
+   "arsPerUsd": 355.69
+  },
+  {
+   "month": "2023-03-01",
+   "kind": "mep",
+   "arsPerUsd": 378.68
+  },
+  {
+   "month": "2023-04-01",
+   "kind": "mep",
+   "arsPerUsd": 412.26
+  },
+  {
+   "month": "2023-05-01",
+   "kind": "mep",
+   "arsPerUsd": 448.11
+  },
+  {
+   "month": "2023-06-01",
+   "kind": "mep",
+   "arsPerUsd": 477.16
+  },
+  {
+   "month": "2023-07-01",
+   "kind": "mep",
+   "arsPerUsd": 495.23
+  },
+  {
+   "month": "2023-08-01",
+   "kind": "mep",
+   "arsPerUsd": 602.79
+  },
+  {
+   "month": "2023-09-01",
+   "kind": "mep",
+   "arsPerUsd": 679.94
+  },
+  {
+   "month": "2023-10-01",
+   "kind": "mep",
+   "arsPerUsd": 841.01
+  },
+  {
+   "month": "2023-11-01",
+   "kind": "mep",
+   "arsPerUsd": 892
+  },
+  {
+   "month": "2023-12-01",
+   "kind": "mep",
+   "arsPerUsd": 968.96
+  },
+  {
+   "month": "2024-01-01",
+   "kind": "mep",
+   "arsPerUsd": 1158.88
+  },
+  {
+   "month": "2024-02-01",
+   "kind": "mep",
+   "arsPerUsd": 1130.28
+  },
+  {
+   "month": "2024-03-01",
+   "kind": "mep",
+   "arsPerUsd": 1025.09
+  },
+  {
+   "month": "2024-04-01",
+   "kind": "mep",
+   "arsPerUsd": 1016.31
+  },
+  {
+   "month": "2024-05-01",
+   "kind": "mep",
+   "arsPerUsd": 1112.02
+  },
+  {
+   "month": "2024-06-01",
+   "kind": "mep",
+   "arsPerUsd": 1280.4
+  },
+  {
+   "month": "2024-07-01",
+   "kind": "mep",
+   "arsPerUsd": 1355.46
+  },
+  {
+   "month": "2024-08-01",
+   "kind": "mep",
+   "arsPerUsd": 1298.89
+  },
+  {
+   "month": "2024-09-01",
+   "kind": "mep",
+   "arsPerUsd": 1229.41
+  },
+  {
+   "month": "2024-10-01",
+   "kind": "mep",
+   "arsPerUsd": 1158.55
+  },
+  {
+   "month": "2024-11-01",
+   "kind": "mep",
+   "arsPerUsd": 1107.61
+  },
+  {
+   "month": "2024-12-01",
+   "kind": "mep",
+   "arsPerUsd": 1110.73
+  },
+  {
+   "month": "2025-01-01",
+   "kind": "mep",
+   "arsPerUsd": 1165.85
+  },
+  {
+   "month": "2025-02-01",
+   "kind": "mep",
+   "arsPerUsd": 1195.04
+  },
+  {
+   "month": "2025-03-01",
+   "kind": "mep",
+   "arsPerUsd": 1261.78
+  },
+  {
+   "month": "2025-04-01",
+   "kind": "mep",
+   "arsPerUsd": 1250.14
+  },
+  {
+   "month": "2025-05-01",
+   "kind": "mep",
+   "arsPerUsd": 1161.19
+  },
+  {
+   "month": "2025-06-01",
+   "kind": "mep",
+   "arsPerUsd": 1189.79
+  },
+  {
+   "month": "2025-07-01",
+   "kind": "mep",
+   "arsPerUsd": 1276.53
+  },
+  {
+   "month": "2025-08-01",
+   "kind": "mep",
+   "arsPerUsd": 1337.49
+  },
+  {
+   "month": "2025-09-01",
+   "kind": "mep",
+   "arsPerUsd": 1450.33
+  },
+  {
+   "month": "2025-10-01",
+   "kind": "mep",
+   "arsPerUsd": 1508.74
+  },
+  {
+   "month": "2025-11-01",
+   "kind": "mep",
+   "arsPerUsd": 1470.84
+  },
+  {
+   "month": "2025-12-01",
+   "kind": "mep",
+   "arsPerUsd": 1490.74
+  },
+  {
+   "month": "2026-01-01",
+   "kind": "mep",
+   "arsPerUsd": 1481.75
+  },
+  {
+   "month": "2026-02-01",
+   "kind": "mep",
+   "arsPerUsd": 1431.85
+  },
+  {
+   "month": "2026-03-01",
+   "kind": "mep",
+   "arsPerUsd": 1427.31
+  },
+  {
+   "month": "2026-04-01",
+   "kind": "mep",
+   "arsPerUsd": 1427.66
+  },
+  {
+   "month": "2026-05-01",
+   "kind": "mep",
+   "arsPerUsd": 1435.65
+  },
+  {
+   "month": "2026-06-01",
+   "kind": "mep",
+   "arsPerUsd": 1473.69
+  },
+  {
+   "month": "2026-07-01",
+   "kind": "mep",
+   "arsPerUsd": 1524.9
+  },
+  {
+   "month": "2026-08-01",
+   "kind": "mep",
+   "arsPerUsd": 1531.69
+  },
+  {
+   "month": "2026-09-01",
+   "kind": "mep",
+   "arsPerUsd": 1538.2
+  },
+  {
+   "month": "2023-01-01",
+   "kind": "blue",
+   "arsPerUsd": 368.65
+  },
+  {
+   "month": "2023-02-01",
+   "kind": "blue",
+   "arsPerUsd": 377.86
+  },
+  {
+   "month": "2023-03-01",
+   "kind": "blue",
+   "arsPerUsd": 382.26
+  },
+  {
+   "month": "2023-04-01",
+   "kind": "blue",
+   "arsPerUsd": 420.97
+  },
+  {
+   "month": "2023-05-01",
+   "kind": "blue",
+   "arsPerUsd": 481.39
+  },
+  {
+   "month": "2023-06-01",
+   "kind": "blue",
+   "arsPerUsd": 490.23
+  },
+  {
+   "month": "2023-07-01",
+   "kind": "blue",
+   "arsPerUsd": 518.58
+  },
+  {
+   "month": "2023-08-01",
+   "kind": "blue",
+   "arsPerUsd": 670.9
+  },
+  {
+   "month": "2023-09-01",
+   "kind": "blue",
+   "arsPerUsd": 738.93
+  },
+  {
+   "month": "2023-10-01",
+   "kind": "blue",
+   "arsPerUsd": 974.06
+  },
+  {
+   "month": "2023-11-01",
+   "kind": "blue",
+   "arsPerUsd": 955.67
+  },
+  {
+   "month": "2023-12-01",
+   "kind": "blue",
+   "arsPerUsd": 989.35
+  },
+  {
+   "month": "2024-01-01",
+   "kind": "blue",
+   "arsPerUsd": 1150
+  },
+  {
+   "month": "2024-02-01",
+   "kind": "blue",
+   "arsPerUsd": 1118.45
+  },
+  {
+   "month": "2024-03-01",
+   "kind": "blue",
+   "arsPerUsd": 1017.9
+  },
+  {
+   "month": "2024-04-01",
+   "kind": "blue",
+   "arsPerUsd": 1017.83
+  },
+  {
+   "month": "2024-05-01",
+   "kind": "blue",
+   "arsPerUsd": 1125.48
+  },
+  {
+   "month": "2024-06-01",
+   "kind": "blue",
+   "arsPerUsd": 1292.83
+  },
+  {
+   "month": "2024-07-01",
+   "kind": "blue",
+   "arsPerUsd": 1436.77
+  },
+  {
+   "month": "2024-08-01",
+   "kind": "blue",
+   "arsPerUsd": 1355.16
+  },
+  {
+   "month": "2024-09-01",
+   "kind": "blue",
+   "arsPerUsd": 1263
+  },
+  {
+   "month": "2024-10-01",
+   "kind": "blue",
+   "arsPerUsd": 1206.77
+  },
+  {
+   "month": "2024-11-01",
+   "kind": "blue",
+   "arsPerUsd": 1140
+  },
+  {
+   "month": "2024-12-01",
+   "kind": "blue",
+   "arsPerUsd": 1138.23
+  },
+  {
+   "month": "2025-01-01",
+   "kind": "blue",
+   "arsPerUsd": 1226.29
+  },
+  {
+   "month": "2025-02-01",
+   "kind": "blue",
+   "arsPerUsd": 1221.96
+  },
+  {
+   "month": "2025-03-01",
+   "kind": "blue",
+   "arsPerUsd": 1256.61
+  },
+  {
+   "month": "2025-04-01",
+   "kind": "blue",
+   "arsPerUsd": 1274.33
+  },
+  {
+   "month": "2025-05-01",
+   "kind": "blue",
+   "arsPerUsd": 1173.39
+  },
+  {
+   "month": "2025-06-01",
+   "kind": "blue",
+   "arsPerUsd": 1192
+  },
+  {
+   "month": "2025-07-01",
+   "kind": "blue",
+   "arsPerUsd": 1293.23
+  },
+  {
+   "month": "2025-08-01",
+   "kind": "blue",
+   "arsPerUsd": 1333.06
+  },
+  {
+   "month": "2025-09-01",
+   "kind": "blue",
+   "arsPerUsd": 1425.67
+  },
+  {
+   "month": "2025-10-01",
+   "kind": "blue",
+   "arsPerUsd": 1474.35
+  },
+  {
+   "month": "2025-11-01",
+   "kind": "blue",
+   "arsPerUsd": 1433.67
+  },
+  {
+   "month": "2025-12-01",
+   "kind": "blue",
+   "arsPerUsd": 1477.58
+  },
+  {
+   "month": "2026-01-01",
+   "kind": "blue",
+   "arsPerUsd": 1502.26
+  },
+  {
+   "month": "2026-02-01",
+   "kind": "blue",
+   "arsPerUsd": 1437.86
+  },
+  {
+   "month": "2026-03-01",
+   "kind": "blue",
+   "arsPerUsd": 1420.48
+  },
+  {
+   "month": "2026-04-01",
+   "kind": "blue",
+   "arsPerUsd": 1407.5
+  },
+  {
+   "month": "2026-05-01",
+   "kind": "blue",
+   "arsPerUsd": 1416.94
+  },
+  {
+   "month": "2026-06-01",
+   "kind": "blue",
+   "arsPerUsd": 1472.83
+  },
+  {
+   "month": "2026-07-01",
+   "kind": "blue",
+   "arsPerUsd": 1532.26
+  },
+  {
+   "month": "2026-08-01",
+   "kind": "blue",
+   "arsPerUsd": 1548.06
+  },
+  {
+   "month": "2026-09-01",
+   "kind": "blue",
+   "arsPerUsd": 1549.82
+  }
+ ]
+}
