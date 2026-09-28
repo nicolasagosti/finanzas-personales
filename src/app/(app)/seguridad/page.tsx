@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { SecurityProbes } from "./probes";
+import { DeleteAccountButton } from "./delete-account";
 
 export const metadata: Metadata = { title: "Seguridad y auditoría" };
 
@@ -138,6 +139,18 @@ export default async function SeguridadPage() {
               </Table>
             </div>
           )}
+        </CardContent>
+      </Card>
+      <Card className="mt-4 border-destructive/30">
+        <CardHeader>
+          <CardTitle>Eliminar mi cuenta</CardTitle>
+          <CardDescription>
+            Borra de inmediato tu usuario y, en cascada, todas tus cuentas, movimientos, reglas, presupuestos y tu
+            registro de auditoría. No se puede deshacer.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DeleteAccountButton isDemo={user.isDemo} />
         </CardContent>
       </Card>
     </>

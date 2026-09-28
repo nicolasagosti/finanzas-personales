@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AlertTriangle, BookOpenCheck, FileUp, LineChart, ShieldCheck, Wallet } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,8 @@ function OrSeparator({ children }: { children: React.ReactNode }) {
 }
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { error } = await searchParams;
+  const { error, cuenta } = await searchParams;
+  const deleted = cuenta === "eliminada";
   const errorMessage = typeof error === "string" ? ERRORS[error] : undefined;
   const googleEnabled = googleConfig() !== null;
   return (
@@ -109,6 +111,11 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
+            {deleted ? (
+              <Alert>
+                <AlertDescription>Tu cuenta y todos tus datos fueron eliminados.</AlertDescription>
+              </Alert>
+            ) : null}
             {errorMessage ? (
               <Alert variant="destructive">
                 <AlertTriangle />
@@ -134,6 +141,15 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
             <EmptySpaceForm />
           </CardContent>
         </Card>
+        <p className="text-center text-xs text-muted-foreground lg:col-start-2">
+          <Link href="/privacidad" className="hover:text-foreground hover:underline">
+            Política de privacidad
+          </Link>
+          {" · "}
+          <a href="https://github.com/nicolasagosti/finanzas-personales" className="hover:text-foreground hover:underline" rel="noopener noreferrer">
+            Código en GitHub
+          </a>
+        </p>
       </div>
     </div>
   );

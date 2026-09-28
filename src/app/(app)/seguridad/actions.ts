@@ -1,7 +1,8 @@
 "use server";
 
-import { withUser } from "@/db/client";
-import { requireUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { asOwner, withUser } from "@/db/client";
+import { endSession, requireUser } from "@/lib/auth";
 
 export type ProbeResult = { name: string; passed: boolean; detail: string };
 
@@ -61,4 +62,18 @@ export async function runSecurityProbes(): Promise<ProbeResult[]> {
   }
 
   return results;
+}
+
+/**
+ * Borra al usuario y, en cascada, todas sus cuentas, movimientos, asientos,
+ * reglas y presupuestos; también su registro de auditoría.
+ */
+export async function deleteMyAccount(): Promise<void> {
+  const user = await requireUser();
+  await asOwner(async (q) => {
+    await q.query("delete from users where id = $1", [user.id]);
+    await q.query("delete from audit_log where user_id = $1", [user.id]);
+  });
+  await endSession();
+  redirect("/login?cuenta=eliminada");
 }

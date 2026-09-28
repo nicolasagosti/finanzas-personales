@@ -128,3 +128,38 @@ describe("login con Google", () => {
     ).rejects.toThrow(/check constraint/);
   });
 });
+
+describe("eliminar cuenta", () => {
+  it("borra al usuario y en cascada todos sus datos (lo mismo que la limpieza de demos)", async () => {
+    const victim = await asOwner(async (q) => {
+      const u = await createUserWithDefaults(q, { email: "borrar@test.invalid", name: "Borrar", isDemo: true });
+      await seedDemoData(q, u.userId, u.accounts);
+      return u.userId;
+    });
+    await withUser(victim, (q) => q.query("insert into rules (user_id, pattern, account_id) select $1, 'AUDITAME', id from accounts limit 1", [victim]));
+
+    await asOwner(async (q) => {
+      await q.query("delete from users where id = $1", [victim]);
+      await q.query("delete from audit_log where user_id = $1", [victim]);
+    });
+
+    const left = await asOwner((q) =>
+      q.query<{ t: string; n: number }>(
+        `select 'transactions' as t, count(*)::bigint as n from transactions where user_id = $1
+         union all select 'postings', count(*)::bigint from postings where user_id = $1
+         union all select 'accounts', count(*)::bigint from accounts where user_id = $1
+         union all select 'audit_log', count(*)::bigint from audit_log where user_id = $1`,
+        [victim],
+      ),
+    );
+    expect(left.every((r) => r.n === 0)).toBe(true);
+  });
+});
+
+describe("integridad al borrar cuentas", () => {
+  it("con la FK diferida, sigue sin poder borrarse una cuenta que tiene movimientos", async () => {
+    await expect(
+      withUser(alice.userId, (q) => q.query("delete from accounts where id = $1", [alice.accounts.super])),
+    ).rejects.toThrow(/foreign key/);
+  });
+});
