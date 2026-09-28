@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import { BookOpenCheck, FileUp, LineChart, ShieldCheck, Wallet } from "lucide-react";
+import { AlertTriangle, BookOpenCheck, FileUp, LineChart, ShieldCheck, Wallet } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { googleConfig } from "@/lib/google-oauth";
 import { DemoForm, EmptySpaceForm } from "./forms";
 
 export const metadata: Metadata = { title: "Ingresar" };
@@ -30,7 +33,36 @@ const FEATURES = [
   },
 ];
 
-export default function LoginPage() {
+const ERRORS: Record<string, string> = {
+  "google-no-config": "El login con Google no está configurado (faltan GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET).",
+  "google-cancelado": "Cancelaste el inicio de sesión con Google.",
+  "google-estado": "El inicio de sesión con Google expiró o no es válido. Probá de nuevo.",
+  google: "No se pudo iniciar sesión con Google. Probá de nuevo.",
+};
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4">
+      <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.46a5.52 5.52 0 0 1-2.4 3.62v3h3.88c2.27-2.09 3.58-5.17 3.58-8.81Z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.94-2.9l-3.88-3.02c-1.07.72-2.45 1.15-4.06 1.15-3.13 0-5.78-2.11-6.72-4.95H1.27v3.11A12 12 0 0 0 12 24Z" />
+      <path fill="#FBBC05" d="M5.28 14.28A7.2 7.2 0 0 1 4.9 12c0-.79.14-1.56.38-2.28V6.61H1.27A12 12 0 0 0 0 12c0 1.94.46 3.77 1.27 5.39l4.01-3.11Z" />
+      <path fill="#EA4335" d="M12 4.77c1.76 0 3.34.61 4.59 1.8l3.44-3.44C17.95 1.19 15.23 0 12 0A12 12 0 0 0 1.27 6.61l4.01 3.11C6.22 6.88 8.87 4.77 12 4.77Z" />
+    </svg>
+  );
+}
+
+function OrSeparator({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+      <Separator className="flex-1" /> {children} <Separator className="flex-1" />
+    </div>
+  );
+}
+
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  const { error } = await searchParams;
+  const errorMessage = typeof error === "string" ? ERRORS[error] : undefined;
+  const googleEnabled = googleConfig() !== null;
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
       <div className="absolute right-4 top-4">
@@ -77,10 +109,28 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
+            {errorMessage ? (
+              <Alert variant="destructive">
+                <AlertTriangle />
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            ) : null}
             <DemoForm />
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <Separator className="flex-1" /> o empezá de cero <Separator className="flex-1" />
-            </div>
+            {googleEnabled ? (
+              <>
+                <OrSeparator>o entrá con tu cuenta</OrSeparator>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-11 w-full text-base"
+                  nativeButton={false}
+                  render={<a href="/api/auth/google" />}
+                >
+                  <GoogleIcon /> Continuar con Google
+                </Button>
+              </>
+            ) : null}
+            <OrSeparator>{googleEnabled ? "o probá sin cuenta" : "o empezá de cero"}</OrSeparator>
             <EmptySpaceForm />
           </CardContent>
         </Card>

@@ -5,7 +5,10 @@ import { logout } from "@/app/login/actions";
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();
   return (
-    <AppShell user={{ name: user.name, isDemo: user.isDemo }} logout={logout}>
+    <AppShell
+      user={{ name: user.name, isDemo: user.isDemo, avatarUrl: user.avatarUrl, viaGoogle: user.viaGoogle }}
+      logout={logout}
+    >
       {children}
     </AppShell>
   );

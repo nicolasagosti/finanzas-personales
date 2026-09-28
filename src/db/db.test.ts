@@ -107,3 +107,24 @@ describe("auditoría", () => {
     await expect(withUser(bob.userId, (q) => q.query("delete from audit_log"))).rejects.toThrow(/permission denied/);
   });
 });
+
+describe("login con Google", () => {
+  it("identifica al usuario por google_sub y no permite duplicarlo", async () => {
+    const created = await asOwner((q) =>
+      createUserWithDefaults(q, { email: "g@test.invalid", name: "G", isDemo: false, googleSub: "sub-1", avatarUrl: "https://lh3.googleusercontent.com/a/x" }),
+    );
+    const [again] = await asOwner((q) =>
+      q.query<{ id: string }>("update users set name = $2 where google_sub = $1 returning id", ["sub-1", "G2"]),
+    );
+    expect(again.id).toBe(created.userId);
+    await expect(
+      asOwner((q) => createUserWithDefaults(q, { email: "otro@test.invalid", name: "X", isDemo: false, googleSub: "sub-1" })),
+    ).rejects.toThrow();
+  });
+
+  it("rechaza avatares que no sean https", async () => {
+    await expect(
+      asOwner((q) => createUserWithDefaults(q, { email: "h@test.invalid", name: "H", isDemo: false, googleSub: "sub-2", avatarUrl: "javascript:alert(1)" })),
+    ).rejects.toThrow(/check constraint/);
+  });
+});

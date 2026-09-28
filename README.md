@@ -33,7 +33,7 @@ npm run dev          # http://localhost:3000
 No hace falta instalar Postgres: sin `DATABASE_URL` la app levanta PGlite en `.data/pglite`, corre las migraciones y carga las series de referencia. En `/login`, **Entrar a la demo** genera un usuario aislado con 12 meses de datos.
 
 ```bash
-npm test             # 42 tests: unitarios + integración contra Postgres (PGlite en memoria)
+npm test             # 62 tests: unitarios + integración contra Postgres (PGlite en memoria)
 npm run lint
 npm run typecheck
 npm run sync:indices # actualiza el snapshot de IPC y dólar desde las APIs públicas
@@ -52,7 +52,20 @@ DATABASE_URL=postgres://usuario:clave@localhost:5432/finanzas npx vitest run src
 2. Importá el repo en Vercel y definí las variables:
    - `DATABASE_URL` — la connection string de Neon (`?sslmode=require`)
    - `SESSION_SECRET` — `openssl rand -hex 32`
-3. Deploy. La primera request corre las migraciones (con `pg_advisory_xact_lock`, seguro ante instancias concurrentes). La migración crea el rol `app_user` y se lo otorga al rol de conexión, que es lo que Neon necesita para hacer `SET ROLE`.
+3. Deploy y verificá la configuración en **`/api/health`**: informa si están `DATABASE_URL` y `SESSION_SECRET`, si la base conecta y migra y si funciona el rol de RLS, sin exponer secretos.
+
+La primera request corre las migraciones (con `pg_advisory_xact_lock`, seguro ante instancias concurrentes). La migración crea el rol `app_user` y se lo otorga al rol de conexión, que es lo que Neon necesita para hacer `SET ROLE`.
+
+### Login con Google (opcional)
+
+1. En [Google Cloud Console](https://console.cloud.google.com/apis/credentials): **Pantalla de consentimiento de OAuth** → tipo *Externo*, nombre de la app y email de soporte.
+2. **Credenciales → Crear credenciales → ID de cliente de OAuth** → *Aplicación web*.
+3. **URIs de redireccionamiento autorizados**:
+   - `https://TU-PROYECTO.vercel.app/api/auth/google/callback`
+   - `http://localhost:3000/api/auth/google/callback` (desarrollo)
+4. Cargá `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` en Vercel y volvé a desplegar. Sin esas variables el botón no se muestra.
+
+El flujo es OpenID Connect con Authorization Code + **PKCE** (S256), `state` y `nonce` guardados en una cookie `httpOnly` de 10 minutos. El `id_token` se valida contra las claves públicas de Google (firma RS256, issuer, audience, vencimiento, nonce y `email_verified`). El usuario se identifica por el `sub` de Google, no por el email, y la redirección posterior solo acepta rutas internas (sin open redirects).
 
 Probado contra Postgres 16 con un dueño **no superusuario** con `CREATEROLE`, el mismo modelo de permisos de Neon.
 
@@ -152,6 +165,7 @@ Paleta de un solo acento, validada para daltonismo y contraste en modo claro y o
 | Base | RLS en todas las tablas de usuario; rol `app_user` sin permisos de dueño; `audit_log` de solo lectura para la app |
 | Integridad | Trigger diferido de balance; FKs compuestas; `CHECK` en montos, monedas y longitudes |
 | Sesión | JWT HS256 en cookie `httpOnly`, `SameSite=Lax`, `Secure` en producción; verificación en el proxy y de nuevo contra la base |
+| Login | Google OIDC con PKCE, `state` y `nonce`; `id_token` validado contra el JWKS de Google; sin open redirects |
 | HTTP | CSP con nonce por request + `strict-dynamic`; HSTS; `X-Frame-Options: DENY`; `Permissions-Policy`; sin `X-Powered-By` |
 | Entrada | zod en cada server action; SQL siempre parametrizado; `LIKE` con comodines escapados; límites de tamaño en importación |
 | Abuso | Tope de demos por hora; las demos se borran a las 24 h |
@@ -160,7 +174,7 @@ Paleta de un solo acento, validada para daltonismo y contraste en modo claro y o
 
 ## Decisiones y límites conocidos
 
-- **Autenticación**: la demo y el "espacio vacío" se atan al navegador con una cookie firmada. Para uso real el siguiente paso es sumar **passkeys** (WebAuthn) u **OAuth**; `src/lib/auth.ts` es la única pieza a cambiar.
+- **Autenticación**: login con **Google** (OIDC) para uso real. La demo y el "espacio sin cuenta" se atan al navegador con una cookie firmada.
 - **Importación**: solo CSV y en cuentas en pesos. Excel y resúmenes en dólares quedan para la versión 2.
 - **Categorías en pesos**: los gastos e ingresos se registran en ARS; los dólares se modelan como ahorro (compra/venta).
 
@@ -168,7 +182,7 @@ Paleta de un solo acento, validada para daltonismo y contraste en modo claro y o
 
 - [ ] "Preguntale a tus finanzas": chat con IA que consulta con **transacciones de solo lectura** (`withUser(..., { readOnly: true, statementTimeoutMs })`, ya soportado) limitadas por RLS al usuario, como defensa real contra prompt injection
 - [ ] Categorización con IA para lo que las reglas no cubren
-- [ ] Passkeys
+- [ ] Passkeys (WebAuthn) como alternativa a Google
 - [ ] Importación de Excel y de resúmenes de tarjeta en dólares
 
 ---

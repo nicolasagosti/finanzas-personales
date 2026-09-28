@@ -67,12 +67,31 @@ function Brand() {
   );
 }
 
-function UserBox({ name, isDemo, logout }: { name: string; isDemo: boolean; logout: () => Promise<void> }) {
+type ShellUser = { name: string; isDemo: boolean; avatarUrl: string | null; viaGoogle: boolean };
+
+function UserBox({ user, logout }: { user: ShellUser; logout: () => Promise<void> }) {
+  const initials = user.name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
   return (
     <div className="flex items-center justify-between gap-2 rounded-lg border bg-background/60 px-3 py-2">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium">{name}</p>
-        <p className="text-xs text-muted-foreground">{isDemo ? "Demo · se borra en 24 h" : "Cuenta personal"}</p>
+      <div className="flex min-w-0 items-center gap-2.5">
+        {user.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- avatar externo chico, sin optimización
+          <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" className="size-8 shrink-0 rounded-full" />
+        ) : (
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold text-primary">
+            {initials || "?"}
+          </span>
+        )}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{user.name}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {user.isDemo ? "Demo · se borra en 24 h" : user.viaGoogle ? "Cuenta de Google" : "Sin cuenta · este navegador"}
+          </p>
+        </div>
       </div>
       <form action={logout}>
         <Button type="submit" variant="ghost" size="icon-sm" aria-label="Cerrar sesión">
@@ -88,7 +107,7 @@ export function AppShell({
   logout,
   children,
 }: {
-  user: { name: string; isDemo: boolean };
+  user: ShellUser;
   logout: () => Promise<void>;
   children: React.ReactNode;
 }) {
@@ -103,7 +122,7 @@ export function AppShell({
             <span className="text-xs text-muted-foreground">Tema</span>
             <ThemeToggle />
           </div>
-          <UserBox name={user.name} isDemo={user.isDemo} logout={logout} />
+          <UserBox user={user} logout={logout} />
         </div>
       </aside>
 
@@ -121,7 +140,7 @@ export function AppShell({
                 <Brand />
                 <NavLinks onNavigate={() => setOpen(false)} />
                 <div className="mt-auto">
-                  <UserBox name={user.name} isDemo={user.isDemo} logout={logout} />
+                  <UserBox user={user} logout={logout} />
                 </div>
               </SheetContent>
             </Sheet>

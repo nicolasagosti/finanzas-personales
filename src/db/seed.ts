@@ -79,11 +79,12 @@ const DEFAULT_RULES: [pattern: string, key: string][] = [
 /** Crea el usuario con su plan de cuentas y reglas por defecto. */
 export async function createUserWithDefaults(
   q: Queryable,
-  user: { email: string; name: string; isDemo: boolean },
+  user: { email: string; name: string; isDemo: boolean; googleSub?: string; avatarUrl?: string | null },
 ): Promise<{ userId: string; accounts: Record<string, string> }> {
   const [{ id: userId }] = await q.query<{ id: string }>(
-    "insert into users (email, name, is_demo) values ($1, $2, $3) returning id",
-    [user.email, user.name, user.isDemo],
+    `insert into users (email, name, is_demo, google_sub, avatar_url)
+     values ($1, $2, $3, $4, $5) returning id`,
+    [user.email, user.name, user.isDemo, user.googleSub ?? null, user.avatarUrl ?? null],
   );
   await q.query(
     `insert into accounts (user_id, name, kind, currency, is_system)

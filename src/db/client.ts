@@ -25,7 +25,7 @@ interface Driver extends Queryable {
   transaction<T>(fn: (q: Queryable) => Promise<T>): Promise<T>;
 }
 
-const MIGRATIONS = ["001_init.sql"];
+const MIGRATIONS = ["001_init.sql", "002_google_auth.sql"];
 
 function toSafeNumber(v: string): number {
   const n = Number(v);

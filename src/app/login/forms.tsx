@@ -43,7 +43,7 @@ export function EmptySpaceForm() {
       </SubmitButton>
       <ErrorAlert state={state} />
       <p className="text-xs text-muted-foreground">
-        El espacio queda asociado a este navegador por 30 días. Ver README para conectar OAuth o passkeys en producción.
+        Sin cuenta, el espacio queda asociado a este navegador por 30 días.
       </p>
     </form>
   );

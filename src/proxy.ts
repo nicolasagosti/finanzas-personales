@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
     // Recharts y los componentes usan atributos style inline; los scripts siguen bloqueados.
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' blob: data:",
+    "img-src 'self' blob: data: https://*.googleusercontent.com", // avatares de Google
     "font-src 'self'",
     "connect-src 'self'",
     "object-src 'none'",
