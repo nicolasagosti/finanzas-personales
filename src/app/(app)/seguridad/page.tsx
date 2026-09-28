@@ -9,13 +9,11 @@ import { EmptyState, PageHeader } from "@/components/page-header";
 import { SecurityProbes } from "./probes";
 import { DeleteAccountButton } from "./delete-account";
 
-export const metadata: Metadata = { title: "Seguridad y auditoría" };
+export const metadata: Metadata = { title: "Seguridad y cuenta" };
 
 const TABLE_LABEL: Record<string, string> = {
   transactions: "Movimiento",
-  accounts: "Cuenta / categoría",
-  budgets: "Presupuesto",
-  rules: "Regla",
+  accounts: "Categoría",
   postings: "Asiento",
 };
 const OP_LABEL: Record<string, string> = { INSERT: "alta", UPDATE: "cambio", DELETE: "baja" };
@@ -32,8 +30,7 @@ type AuditRow = {
 function summarize(r: AuditRow): string {
   const d = r.new_data ?? r.old_data ?? {};
   if (r.table_name === "transactions") return String(d.description ?? "");
-  if (r.table_name === "accounts" || r.table_name === "rules") return String(d.name ?? d.pattern ?? "");
-  if (r.table_name === "budgets") return `$ ${(Number(d.amount ?? 0) / 100).toLocaleString("es-AR")}`;
+  if (r.table_name === "accounts") return String(d.name ?? "");
   if (r.table_name === "postings") return "Recategorización de asiento";
   return "";
 }
@@ -71,7 +68,7 @@ export default async function SeguridadPage() {
 
   return (
     <>
-      <PageHeader title="Seguridad y auditoría" description="Datos financieros: la seguridad vive en la base, no solo en el código." />
+      <PageHeader title="Seguridad y cuenta" description="Datos financieros: la seguridad vive en la base, no solo en el código." />
 
       <div className="grid gap-4 md:grid-cols-2">
         {FEATURES.map(({ icon: Icon, title, text }) => (
@@ -109,7 +106,7 @@ export default async function SeguridadPage() {
         <CardContent>
           {audit.length === 0 ? (
             <EmptyState icon={ShieldCheck} title="Sin cambios registrados todavía">
-              Creá, editá o borrá un movimiento, una regla o un presupuesto y aparece acá.
+              Creá, editá o borrá un movimiento o una categoría y aparece acá.
             </EmptyState>
           ) : (
             <div className="overflow-hidden rounded-lg border">

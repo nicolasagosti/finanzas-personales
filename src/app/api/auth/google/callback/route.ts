@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
     });
 
     const session = await issueSession(userId, false);
-    const res = redirectTo(isNew ? "/cuentas?bienvenida=1" : tx.next);
+    const res = redirectTo(isNew ? "/" : tx.next);
     res.cookies.set(session.name, session.value, session.options);
     return res;
   } catch (e) {

@@ -53,8 +53,7 @@ export default function PrivacidadPage() {
           <code>profile</code>; no accedemos a Gmail, Drive ni a ningún otro dato de tu cuenta.
         </p>
         <p>
-          <strong>Los datos que cargás:</strong> cuentas, movimientos, categorías, reglas, presupuestos y los resúmenes
-          CSV que importes.
+          <strong>Los datos que cargás:</strong> tus ingresos, egresos y categorías.
         </p>
         <p>
           <strong>La demo</strong> usa datos inventados y no pide ningún dato personal.
@@ -106,7 +105,7 @@ export default function PrivacidadPage() {
       <Section title="Tus derechos y cómo eliminar tus datos">
         <p>
           Podés <strong>borrar tu cuenta y todos tus datos</strong> en cualquier momento desde{" "}
-          <strong>Seguridad y auditoría → Eliminar mi cuenta</strong>. El borrado es inmediato y definitivo. También
+          <strong>Seguridad y cuenta → Eliminar mi cuenta</strong>. El borrado es inmediato y definitivo. También
           podés revocar el acceso de la aplicación desde{" "}
           <a href="https://myaccount.google.com/permissions" className="text-primary underline" rel="noopener noreferrer">
             la configuración de tu cuenta de Google

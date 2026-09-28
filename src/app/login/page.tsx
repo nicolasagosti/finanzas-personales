@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, BookOpenCheck, FileUp, LineChart, ShieldCheck, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight, BarChart3, PieChart, ShieldCheck, Wallet } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,24 +13,24 @@ export const metadata: Metadata = { title: "Ingresar" };
 
 const FEATURES = [
   {
-    icon: BookOpenCheck,
-    title: "Partida doble de verdad",
-    text: "Cada movimiento es un asiento balanceado, en centavos enteros. La base rechaza lo que no cuadra.",
+    icon: ArrowLeftRight,
+    title: "Ingresos y egresos, nada más",
+    text: "Cargá cada movimiento en segundos: monto, fecha, descripción y categoría.",
   },
   {
-    icon: LineChart,
-    title: "Pesos, dólares e inflación",
-    text: "Mirá tus números en pesos de hoy (IPC del INDEC) o en dólares oficial, MEP o blue.",
+    icon: PieChart,
+    title: "Gráficos de colores",
+    text: "Cada categoría tiene su color: ves de un vistazo en qué se va la plata.",
   },
   {
-    icon: FileUp,
-    title: "Importá tu resumen",
-    text: "Subí el CSV del banco. Reimportarlo no duplica nada y las reglas categorizan solas.",
+    icon: BarChart3,
+    title: "Mes a mes",
+    text: "Compará ingresos y egresos de los últimos 12 meses y cuánto ahorraste.",
   },
   {
     icon: ShieldCheck,
-    title: "Seguridad en la base",
-    text: "Row Level Security de Postgres aísla cada usuario. Auditoría de cambios incluida.",
+    title: "Tus datos, solo tuyos",
+    text: "Cada usuario está aislado en la base de datos (Row Level Security).",
   },
 ];
 
@@ -80,11 +80,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </div>
           <div className="space-y-3">
             <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              Tus finanzas, pensadas para la economía argentina.
+              Tus ingresos y egresos, claros y a color.
             </h1>
             <p className="max-w-xl text-muted-foreground text-pretty">
-              Un gestor de gastos serio: libro contable de doble entrada, multi-moneda y con ajuste
-              por inflación para comparar meses de verdad.
+              Anotá lo que entra y lo que sale, y mirá en qué se va tu plata con gráficos simples.
             </p>
           </div>
           <ul className="grid gap-4 sm:grid-cols-2">

@@ -1,7 +1,6 @@
 import "server-only";
 import { mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import reference from "./reference-data.json";
 
 /**
  * Acceso a Postgres con dos drivers intercambiables:
@@ -25,7 +24,12 @@ interface Driver extends Queryable {
   transaction<T>(fn: (q: Queryable) => Promise<T>): Promise<T>;
 }
 
-const MIGRATIONS = ["001_init.sql", "002_google_auth.sql", "003_deferred_posting_fk.sql"];
+const MIGRATIONS = [
+  "001_init.sql",
+  "002_google_auth.sql",
+  "003_deferred_posting_fk.sql",
+  "004_category_colors.sql",
+];
 
 function toSafeNumber(v: string): number {
   const n = Number(v);
@@ -126,33 +130,6 @@ async function migrate(db: Driver) {
       if (again.length) return;
       await q.exec(sqlText);
       await q.query("insert into schema_migrations (name) values ($1)", [name]);
-    });
-  }
-
-  // Series de referencia (IPC + dólar): se recargan cuando cambia el snapshot.
-  const refKey = `reference:${reference.generatedAt}`;
-  if (!applied.has(refKey)) {
-    await db.transaction(async (q) => {
-      await q.query(
-        `insert into cpi (month, index_value)
-         select * from unnest($1::date[], $2::numeric[])
-         on conflict (month) do update set index_value = excluded.index_value`,
-        [reference.cpi.map((r) => r.month), reference.cpi.map((r) => r.value)],
-      );
-      await q.query(
-        `insert into exchange_rates (month, kind, ars_per_usd)
-         select * from unnest($1::date[], $2::text[], $3::numeric[])
-         on conflict (month, kind) do update set ars_per_usd = excluded.ars_per_usd`,
-        [
-          reference.fx.map((r) => r.month),
-          reference.fx.map((r) => r.kind),
-          reference.fx.map((r) => r.arsPerUsd),
-        ],
-      );
-      await q.query(
-        "insert into schema_migrations (name) values ($1) on conflict do nothing",
-        [refKey],
-      );
     });
   }
 }

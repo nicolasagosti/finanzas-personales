@@ -42,7 +42,7 @@ describe("Row Level Security", () => {
     await expect(
       withUser(bob.userId, (q) =>
         insertTransactions(q, bob.userId, [
-          simpleTransaction({ date: "2026-09-01", description: "robo", amount: 100, moneyAccountId: bob.accounts.banco, categoryAccountId: alice.accounts.sueldo }),
+          simpleTransaction({ date: "2026-09-01", description: "robo", amount: 100, moneyAccountId: bob.accounts.dinero, categoryAccountId: alice.accounts.sueldo }),
         ]),
       ),
     ).rejects.toThrow();
@@ -64,7 +64,7 @@ describe("partida doble en la base", () => {
         );
         await q.query(
           "insert into postings (user_id, transaction_id, account_id, amount, currency) values ($1, $2, $3, 100, 'ARS'), ($1, $2, $4, -99, 'ARS')",
-          [bob.userId, tx.id, bob.accounts.super, bob.accounts.banco],
+          [bob.userId, tx.id, bob.accounts.super, bob.accounts.dinero],
         );
       }),
     ).rejects.toThrow(/desbalanceado/);
@@ -74,7 +74,7 @@ describe("partida doble en la base", () => {
     await expect(
       withUser(bob.userId, (q) =>
         insertTransactions(q, bob.userId, [
-          simpleTransaction({ date: "2026-09-01", description: "x", amount: 100, currency: "USD", moneyAccountId: bob.accounts.banco, categoryAccountId: bob.accounts.sueldo }),
+          simpleTransaction({ date: "2026-09-01", description: "x", amount: 100, currency: "USD", moneyAccountId: bob.accounts.dinero, categoryAccountId: bob.accounts.sueldo }),
         ]),
       ),
     ).rejects.toThrow(/foreign key/);
@@ -89,7 +89,7 @@ describe("partida doble en la base", () => {
 
   it("reimportar con la misma huella no duplica", async () => {
     const tx = () =>
-      simpleTransaction({ date: "2026-09-02", description: "CAFE", amount: -680000, moneyAccountId: bob.accounts.banco, categoryAccountId: bob.accounts.restaurantes, source: "import", importHash: "hash-1" });
+      simpleTransaction({ date: "2026-09-02", description: "CAFE", amount: -680000, moneyAccountId: bob.accounts.dinero, categoryAccountId: bob.accounts.comida, source: "import", importHash: "hash-1" });
     const first = await withUser(bob.userId, (q) => insertTransactions(q, bob.userId, [tx()]));
     const second = await withUser(bob.userId, (q) => insertTransactions(q, bob.userId, [tx()]));
     expect(first).toMatchObject({ inserted: 1, skipped: 0 });
@@ -100,10 +100,10 @@ describe("partida doble en la base", () => {
 describe("auditoría", () => {
   it("registra los cambios hechos desde la app y es de solo lectura", async () => {
     await withUser(bob.userId, (q) =>
-      q.query("insert into rules (user_id, pattern, account_id) values ($1, 'VETERINARIA', $2)", [bob.userId, bob.accounts.super]),
+      q.query("insert into accounts (user_id, name, kind, color) values ($1, 'Mascotas', 'expense', 'aqua')", [bob.userId]),
     );
     const log = await withUser(bob.userId, (q) => q.query<{ table_name: string; operation: string }>("select table_name, operation from audit_log"));
-    expect(log).toContainEqual({ table_name: "rules", operation: "INSERT" });
+    expect(log).toContainEqual({ table_name: "accounts", operation: "INSERT" });
     await expect(withUser(bob.userId, (q) => q.query("delete from audit_log"))).rejects.toThrow(/permission denied/);
   });
 });
@@ -136,7 +136,7 @@ describe("eliminar cuenta", () => {
       await seedDemoData(q, u.userId, u.accounts);
       return u.userId;
     });
-    await withUser(victim, (q) => q.query("insert into rules (user_id, pattern, account_id) select $1, 'AUDITAME', id from accounts limit 1", [victim]));
+    await withUser(victim, (q) => q.query("insert into accounts (user_id, name, kind) values ($1, 'Auditame', 'expense')", [victim]));
 
     await asOwner(async (q) => {
       await q.query("delete from users where id = $1", [victim]);

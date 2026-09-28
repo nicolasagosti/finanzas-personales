@@ -25,6 +25,10 @@
   --color-chart-1: var(--chart-1);
   --color-chart-grid: var(--chart-grid);
   --color-positive: var(--positive);
+  --color-income: var(--income);
+  --color-expense: var(--expense);
+  --color-income-text: var(--income-text);
+  --color-expense-text: var(--expense-text);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -77,6 +81,21 @@
   --chart-5: #e87ba4;
   --chart-grid: oklch(0.92 0.004 250);
   --positive: oklch(0.52 0.13 155);
+  /* ingresos / egresos (par validado para daltonismo) */
+  --income: #1baf7a;
+  --expense: #eb6834;
+  --income-text: oklch(0.5 0.12 162);
+  --expense-text: oklch(0.55 0.17 40);
+  /* colores de categoría: paleta categórica validada + gris para "Otros" */
+  --cat-blue: #2a78d6;
+  --cat-orange: #eb6834;
+  --cat-aqua: #1baf7a;
+  --cat-yellow: #eda100;
+  --cat-magenta: #e87ba4;
+  --cat-green: #008300;
+  --cat-violet: #4a3aa7;
+  --cat-red: #e34948;
+  --cat-gray: #a3a39e;
   --radius: 0.75rem;
   --sidebar: oklch(0.975 0.003 250);
   --sidebar-foreground: oklch(0.25 0.01 255);
@@ -114,6 +133,19 @@
   --chart-5: #d55181;
   --chart-grid: oklch(1 0 0 / 8%);
   --positive: oklch(0.75 0.13 155);
+  --income: #199e70;
+  --expense: #d95926;
+  --income-text: oklch(0.78 0.12 162);
+  --expense-text: oklch(0.75 0.14 45);
+  --cat-blue: #3987e5;
+  --cat-orange: #d95926;
+  --cat-aqua: #199e70;
+  --cat-yellow: #c98500;
+  --cat-magenta: #d55181;
+  --cat-green: #008300;
+  --cat-violet: #9085e9;
+  --cat-red: #e66767;
+  --cat-gray: #6b6b66;
   --sidebar: oklch(0.18 0.007 255);
   --sidebar-foreground: oklch(0.9 0.005 250);
   --sidebar-primary: #3987e5;

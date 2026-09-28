@@ -1,17 +1,7 @@
 "use client";
 
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ReferenceLine,
-  XAxis,
-  YAxis,
-} from "recharts";
+import Link from "next/link";
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartLegend,
@@ -20,58 +10,54 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { formatMoney, type Currency } from "@/lib/money";
+import { colorVar } from "@/lib/colors";
 import { monthLabel, monthLabelLong } from "@/lib/dates";
+import { formatMoney, formatPercent } from "@/lib/money";
 
 /**
- * Gráficos del resumen. Convenciones (ver README → Visualización):
- * barras ≤ 24px con extremo redondeado, líneas de 2px, grilla sólida y tenue,
- * un solo eje Y, tooltip en todos, leyenda cuando hay ≥ 2 series.
+ * Convenciones (ver README → Visualización): un solo eje Y, barras ≤ 24px con
+ * extremo redondeado, 2px de separación entre porciones, tooltip siempre y
+ * leyenda con nombre y valor para que el color nunca sea la única pista.
  */
 
 const axisTick = { fill: "var(--muted-foreground)", fontSize: 12 };
-
-function moneyTick(currency: Currency) {
-  return (v: number) => formatMoney(v, currency, { compact: true });
-}
-
-function tooltipFormatter(currency: Currency, config: ChartConfig) {
-  // eslint-disable-next-line react/display-name
-  return (value: unknown, name: unknown, item: { color?: string }) => (
-    <div className="flex w-full items-center justify-between gap-4">
-      <span className="flex items-center gap-1.5 text-muted-foreground">
-        <span className="size-2.5 rounded-[3px]" style={{ background: item.color }} />
-        {config[String(name)]?.label ?? String(name)}
-      </span>
-      <span className="font-medium tabular text-foreground">{formatMoney(Number(value), currency, { decimals: false })}</span>
-    </div>
-  );
-}
-
-const monthTooltipLabel = (_: unknown, payload: readonly { payload?: { month?: string } }[]) => {
-  const m = payload?.[0]?.payload?.month;
-  return m ? <span className="capitalize">{monthLabelLong(m)}</span> : null;
-};
+const moneyTick = (v: number) => formatMoney(v, "ARS", { compact: true });
 
 // ---------------------------------------------------------------------------
 
 export type FlowPoint = { month: string; income: number; expense: number };
 
 const flowConfig = {
-  income: { label: "Ingresos", color: "var(--chart-1)" },
-  expense: { label: "Gastos", color: "var(--chart-2)" },
+  income: { label: "Ingresos", color: "var(--income)" },
+  expense: { label: "Egresos", color: "var(--expense)" },
 } satisfies ChartConfig;
 
-export function IncomeExpenseChart({ data, currency }: { data: FlowPoint[]; currency: Currency }) {
+export function IncomeExpenseChart({ data }: { data: FlowPoint[] }) {
   return (
     <ChartContainer config={flowConfig} className="aspect-auto h-full min-h-72 w-full">
       <BarChart data={data} barGap={2} barCategoryGap="22%" margin={{ left: 4, right: 4, top: 8 }}>
         <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
         <XAxis dataKey="month" tickFormatter={monthLabel} tickLine={false} axisLine={false} tick={axisTick} tickMargin={8} />
-        <YAxis tickFormatter={moneyTick(currency)} tickLine={false} axisLine={false} tick={axisTick} width={72} />
+        <YAxis tickFormatter={moneyTick} tickLine={false} axisLine={false} tick={axisTick} width={72} />
         <ChartTooltip
           cursor={{ fill: "var(--muted)", opacity: 0.6 }}
-          content={<ChartTooltipContent labelFormatter={monthTooltipLabel} formatter={tooltipFormatter(currency, flowConfig)} />}
+          content={
+            <ChartTooltipContent
+              labelFormatter={(_, payload) => {
+                const m = (payload?.[0]?.payload as FlowPoint | undefined)?.month;
+                return m ? <span className="capitalize">{monthLabelLong(m)}</span> : null;
+              }}
+              formatter={(value, name, item) => (
+                <div className="flex w-full items-center justify-between gap-4">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="size-2.5 rounded-[3px]" style={{ background: item.color }} />
+                    {flowConfig[name as keyof typeof flowConfig]?.label ?? String(name)}
+                  </span>
+                  <span className="font-medium tabular text-foreground">{formatMoney(Number(value), "ARS", { decimals: false })}</span>
+                </div>
+              )}
+            />
+          }
         />
         <ChartLegend content={<ChartLegendContent />} />
         <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} maxBarSize={24} />
@@ -83,106 +69,108 @@ export function IncomeExpenseChart({ data, currency }: { data: FlowPoint[]; curr
 
 // ---------------------------------------------------------------------------
 
-export type TrendPoint = { month: string; nominal: number; real?: number };
+export type DonutSlice = { id: string; name: string; color: string | null; total: number };
 
-const trendConfig = {
-  nominal: { label: "Nominal", color: "var(--chart-2)" },
-  real: { label: "En pesos de hoy", color: "var(--chart-1)" },
-} satisfies ChartConfig;
+const MAX_SLICES = 6;
 
-/** Gasto mensual nominal vs. ajustado por inflación: muestra cuánto del "aumento" es solo IPC. */
-export function ExpenseTrendChart({
-  data,
-  currency,
-  showReal,
-}: {
-  data: TrendPoint[];
-  currency: Currency;
-  showReal: boolean;
-}) {
-  const config: ChartConfig = showReal ? trendConfig : { nominal: { label: currency === "USD" ? "Gasto en USD" : "Gasto", color: "var(--chart-1)" } };
-  const values = data.map((d) => (showReal ? d.real ?? 0 : d.nominal));
-  const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+/** Las 6 categorías más grandes con su color propio; el resto se agrupa en "Otros" (gris). */
+function toSlices(data: DonutSlice[]): DonutSlice[] {
+  if (data.length <= MAX_SLICES + 1) return data;
+  const top = data.slice(0, MAX_SLICES);
+  const rest = data.slice(MAX_SLICES).reduce((a, b) => a + b.total, 0);
+  return [...top, { id: "otros", name: "Otros", color: "gray", total: rest }];
+}
+
+function DonutTooltip({ active, payload, total }: { active?: boolean; payload?: { payload: DonutSlice }[]; total: number }) {
+  const slice = payload?.[0]?.payload;
+  if (!active || !slice) return null;
   return (
-    <ChartContainer config={config} className="aspect-auto h-72 w-full">
-      <LineChart data={data} margin={{ left: 4, right: 12, top: 8 }}>
-        <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
-        <XAxis dataKey="month" tickFormatter={monthLabel} tickLine={false} axisLine={false} tick={axisTick} tickMargin={8} />
-        <YAxis tickFormatter={moneyTick(currency)} tickLine={false} axisLine={false} tick={axisTick} width={72} />
-        <ChartTooltip
-          cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
-          content={<ChartTooltipContent labelFormatter={monthTooltipLabel} formatter={tooltipFormatter(currency, config)} />}
-        />
-        {showReal ? <ChartLegend content={<ChartLegendContent />} /> : null}
-        <ReferenceLine
-          y={avg}
-          stroke="var(--muted-foreground)"
-          strokeOpacity={0.5}
-          label={{ value: "promedio", position: "insideTopRight", fill: "var(--muted-foreground)", fontSize: 11 }}
-        />
-        <Line
-          dataKey="nominal"
-          type="monotone"
-          stroke="var(--color-nominal)"
-          strokeWidth={2}
-          dot={false}
-          activeDot={{ r: 5, strokeWidth: 2, stroke: "var(--card)" }}
-        />
-        {showReal ? (
-          <Line
-            dataKey="real"
-            type="monotone"
-            stroke="var(--color-real)"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 5, strokeWidth: 2, stroke: "var(--card)" }}
-          />
-        ) : null}
-      </LineChart>
-    </ChartContainer>
+    <div className="grid min-w-40 gap-1 rounded-lg border bg-background px-2.5 py-1.5 text-xs shadow-xl">
+      <span className="flex items-center gap-1.5 font-medium">
+        <span className="size-2.5 rounded-[3px]" style={{ background: colorVar(slice.color) }} />
+        {slice.name}
+      </span>
+      <span className="flex justify-between gap-4 text-muted-foreground">
+        <span className="tabular text-foreground">{formatMoney(slice.total, "ARS", { decimals: false })}</span>
+        {formatPercent(total ? slice.total / total : 0, 1)}
+      </span>
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
+export function CategoryDonut({
+  data,
+  centerLabel,
+  month,
+  type,
+}: {
+  data: DonutSlice[];
+  centerLabel: string;
+  month: string;
+  type: "income" | "expense";
+}) {
+  const slices = toSlices(data);
+  const total = slices.reduce((a, b) => a + b.total, 0);
+  const mes = month.slice(0, 7);
 
-export type NetWorthChartPoint = { month: string; pesos: number; dolares: number };
-
-const netWorthConfig = {
-  dolares: { label: "En dólares (valuado)", color: "var(--chart-1)" },
-  pesos: { label: "En pesos", color: "var(--chart-2)" },
-} satisfies ChartConfig;
-
-export function NetWorthChart({ data, currency }: { data: NetWorthChartPoint[]; currency: Currency }) {
   return (
-    <ChartContainer config={netWorthConfig} className="aspect-auto h-72 w-full">
-      <AreaChart data={data} margin={{ left: 4, right: 12, top: 8 }}>
-        <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
-        <XAxis dataKey="month" tickFormatter={monthLabel} tickLine={false} axisLine={false} tick={axisTick} tickMargin={8} />
-        <YAxis tickFormatter={moneyTick(currency)} tickLine={false} axisLine={false} tick={axisTick} width={72} />
-        <ChartTooltip
-          cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
-          content={<ChartTooltipContent labelFormatter={monthTooltipLabel} formatter={tooltipFormatter(currency, netWorthConfig)} />}
-        />
-        <ChartLegend content={<ChartLegendContent />} />
-        <Area
-          dataKey="dolares"
-          type="monotone"
-          stackId="nw"
-          stroke="var(--color-dolares)"
-          strokeWidth={2}
-          fill="var(--color-dolares)"
-          fillOpacity={0.12}
-        />
-        <Area
-          dataKey="pesos"
-          type="monotone"
-          stackId="nw"
-          stroke="var(--color-pesos)"
-          strokeWidth={2}
-          fill="var(--color-pesos)"
-          fillOpacity={0.12}
-        />
-      </AreaChart>
-    </ChartContainer>
+    // La leyenda va al costado solo si entra (container query); si no, abajo de la dona.
+    <div className="@container">
+      <div className="flex flex-col items-center gap-5 @lg:flex-row @lg:gap-6">
+      <div className="relative size-52 shrink-0">
+        <PieChart width={208} height={208}>
+          <Tooltip content={<DonutTooltip total={total} />} />
+          <Pie
+            data={slices}
+            dataKey="total"
+            nameKey="name"
+            innerRadius={66}
+            outerRadius={100}
+            startAngle={90}
+            endAngle={-270}
+            stroke="var(--card)"
+            strokeWidth={2}
+            isAnimationActive={false}
+          >
+            {slices.map((s) => (
+              <Cell key={s.id} fill={colorVar(s.color)} />
+            ))}
+          </Pie>
+        </PieChart>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+          <span className="text-xs text-muted-foreground">{centerLabel}</span>
+          <span className="text-lg font-semibold tracking-tight tabular">{formatMoney(total, "ARS", { compact: true })}</span>
+        </div>
+      </div>
+
+      <ul className="flex w-full min-w-0 flex-col gap-1">
+        {slices.map((s) => {
+          const content = (
+            <>
+              <span className="size-3 shrink-0 rounded-full" style={{ background: colorVar(s.color) }} />
+              <span className="min-w-0 flex-1 truncate">{s.name}</span>
+              <span className="text-xs text-muted-foreground tabular">{formatPercent(total ? s.total / total : 0, 0)}</span>
+              <span className="w-24 text-right font-medium tabular">{formatMoney(s.total, "ARS", { decimals: false })}</span>
+            </>
+          );
+          return (
+            <li key={s.id}>
+              {s.id === "otros" ? (
+                <div className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm">{content}</div>
+              ) : (
+                <Link
+                  href={`/movimientos?categoria=${s.id}&mes=${mes}&tipo=${type === "income" ? "ingresos" : "egresos"}`}
+                  className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+                  title={`Ver movimientos de ${s.name}`}
+                >
+                  {content}
+                </Link>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      </div>
+    </div>
   );
 }

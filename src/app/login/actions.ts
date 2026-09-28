@@ -57,7 +57,7 @@ export async function startEmpty(_: LoginState, formData: FormData): Promise<Log
   } catch (e) {
     return { error: describeSetupError(e) };
   }
-  redirect("/cuentas?bienvenida=1");
+  redirect("/");
 }
 
 export async function logout() {

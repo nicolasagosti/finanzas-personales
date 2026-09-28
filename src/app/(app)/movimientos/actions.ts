@@ -3,38 +3,31 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { withUser } from "@/db/client";
+import { moneyAccountId } from "@/db/seed";
 import { requireUser } from "@/lib/auth";
 import { isValidISODate } from "@/lib/dates";
-import {
-  fxPurchaseTransaction,
-  insertTransactions,
-  simpleTransaction,
-  transferTransaction,
-} from "@/lib/ledger";
+import { insertTransactions, simpleTransaction } from "@/lib/ledger";
 import { parseAmountToCents } from "@/lib/money";
 
 export type ActionState = { ok: boolean; message: string } | null;
 
 const uuid = z.string().uuid();
 
-const baseSchema = z.object({
-  type: z.enum(["expense", "income", "transfer", "fx"]),
+const schema = z.object({
+  type: z.enum(["expense", "income"]),
   date: z.string().refine(isValidISODate, "Fecha inválida"),
   description: z.string().trim().min(1, "Falta la descripción").max(200),
   amount: z.string().trim().min(1, "Falta el monto"),
-  accountId: uuid,
-  categoryId: uuid.optional().or(z.literal("")),
-  toAccountId: uuid.optional().or(z.literal("")),
-  usdAmount: z.string().trim().optional(),
+  categoryId: uuid,
 });
 
 function revalidateAll() {
-  for (const p of ["/", "/movimientos", "/cuentas", "/presupuesto", "/categorias"]) revalidatePath(p);
+  for (const p of ["/", "/movimientos", "/categorias"]) revalidatePath(p);
 }
 
 export async function createTransaction(_: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireUser();
-  const parsed = baseSchema.safeParse(Object.fromEntries(formData));
+  const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   const f = parsed.data;
 
@@ -48,75 +41,20 @@ export async function createTransaction(_: ActionState, formData: FormData): Pro
 
   try {
     await withUser(user.id, async (q) => {
-      // Las cuentas se leen bajo RLS: una cuenta ajena simplemente "no existe".
-      const ids = [f.accountId, f.categoryId, f.toAccountId].filter(Boolean) as string[];
-      const accounts = await q.query<{ id: string; kind: string; currency: "ARS" | "USD"; is_system: boolean }>(
-        "select id, kind::text as kind, currency, is_system from accounts where id = any($1::uuid[])",
-        [ids],
+      // Bajo RLS, una categoría de otro usuario simplemente "no existe".
+      const [cat] = await q.query<{ id: string; kind: string }>(
+        "select id, kind::text as kind from accounts where id = $1 and kind in ('income', 'expense')",
+        [f.categoryId],
       );
-      const get = (id?: string) => accounts.find((a) => a.id === id);
-      const from = get(f.accountId);
-      if (!from || !["asset", "liability"].includes(from.kind)) throw new Error("Cuenta inválida");
-
-      if (f.type === "expense" || f.type === "income") {
-        const cat = get(f.categoryId || undefined);
-        if (!cat || cat.kind !== f.type) throw new Error("Elegí una categoría válida");
-        if (cat.currency !== from.currency) throw new Error("La categoría y la cuenta deben tener la misma moneda");
-        await insertTransactions(q, user.id, [
-          simpleTransaction({
-            date: f.date,
-            description: f.description,
-            amount: f.type === "expense" ? -cents : cents,
-            moneyAccountId: from.id,
-            categoryAccountId: cat.id,
-            currency: from.currency,
-          }),
-        ]);
-        return;
-      }
-
-      const to = get(f.toAccountId || undefined);
-      if (!to || !["asset", "liability"].includes(to.kind) || to.id === from.id) {
-        throw new Error("Elegí una cuenta de destino distinta");
-      }
-
-      if (f.type === "transfer") {
-        if (to.currency !== from.currency) throw new Error("Para cambiar de moneda usá “Compra de dólares”");
-        await insertTransactions(q, user.id, [
-          transferTransaction({
-            date: f.date,
-            description: f.description,
-            amount: cents,
-            fromAccountId: from.id,
-            toAccountId: to.id,
-            currency: from.currency,
-          }),
-        ]);
-        return;
-      }
-
-      // Compra de dólares: pesos que salen, dólares que entran
-      if (from.currency !== "ARS" || to.currency !== "USD") {
-        throw new Error("La compra de dólares va de una cuenta en pesos a una en dólares");
-      }
-      const usdCents = Math.abs(parseAmountToCents(f.usdAmount ?? ""));
-      if (!usdCents) throw new Error("Indicá cuántos dólares compraste");
-      const conv = await q.query<{ id: string; currency: string }>(
-        "select id, currency from accounts where kind = 'equity' and name = 'Conversión de moneda'",
-      );
-      const convArs = conv.find((c) => c.currency === "ARS");
-      const convUsd = conv.find((c) => c.currency === "USD");
-      if (!convArs || !convUsd) throw new Error("Faltan las cuentas de conversión de moneda");
+      if (!cat || cat.kind !== f.type) throw new Error("Elegí una categoría válida");
+      const money = await moneyAccountId(q, user.id);
       await insertTransactions(q, user.id, [
-        fxPurchaseTransaction({
+        simpleTransaction({
           date: f.date,
           description: f.description,
-          arsAmount: cents,
-          usdAmount: usdCents,
-          fromArsAccountId: from.id,
-          toUsdAccountId: to.id,
-          conversionArsId: convArs.id,
-          conversionUsdId: convUsd.id,
+          amount: f.type === "expense" ? -cents : cents,
+          moneyAccountId: money,
+          categoryAccountId: cat.id,
         }),
       ]);
     });
@@ -124,7 +62,7 @@ export async function createTransaction(_: ActionState, formData: FormData): Pro
     return { ok: false, message: e instanceof Error ? e.message : "No se pudo guardar" };
   }
   revalidateAll();
-  return { ok: true, message: "Movimiento guardado" };
+  return { ok: true, message: f.type === "income" ? "Ingreso guardado" : "Egreso guardado" };
 }
 
 export async function deleteTransaction(id: string): Promise<ActionState> {
@@ -137,7 +75,7 @@ export async function deleteTransaction(id: string): Promise<ActionState> {
   return deleted.length ? { ok: true, message: "Movimiento eliminado" } : { ok: false, message: "No encontrado" };
 }
 
-/** Cambia la categoría de un gasto/ingreso (mismo tipo y moneda). */
+/** Cambia la categoría de un movimiento (debe ser del mismo tipo: ingreso o egreso). */
 export async function recategorize(transactionId: string, categoryId: string): Promise<ActionState> {
   const user = await requireUser();
   if (!uuid.safeParse(transactionId).success || !uuid.safeParse(categoryId).success) {

@@ -3,18 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import {
-  ArrowLeftRight,
-  FileUp,
-  Landmark,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  PiggyBank,
-  ShieldCheck,
-  Tags,
-  Wallet,
-} from "lucide-react";
+import { ArrowLeftRight, LayoutDashboard, LogOut, Menu, ShieldCheck, Tags, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -23,11 +12,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 const NAV = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
   { href: "/movimientos", label: "Movimientos", icon: ArrowLeftRight },
-  { href: "/cuentas", label: "Cuentas", icon: Landmark },
-  { href: "/categorias", label: "Categorías y reglas", icon: Tags },
-  { href: "/presupuesto", label: "Presupuesto", icon: PiggyBank },
-  { href: "/importar", label: "Importar resumen", icon: FileUp },
-  { href: "/seguridad", label: "Seguridad y auditoría", icon: ShieldCheck },
+  { href: "/categorias", label: "Categorías", icon: Tags },
+  { href: "/seguridad", label: "Seguridad y cuenta", icon: ShieldCheck },
 ];
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
