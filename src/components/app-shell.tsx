@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeftRight, LayoutDashboard, LogOut, Menu, ShieldCheck, Tags, Wallet } from "lucide-react";
+import { ArrowLeftRight, LayoutDashboard, LogOut, Menu, Send, ShieldCheck, Tags, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -13,14 +13,15 @@ const NAV = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
   { href: "/movimientos", label: "Movimientos", icon: ArrowLeftRight },
   { href: "/categorias", label: "Categorías", icon: Tags },
+  { href: "/telegram", label: "Telegram", icon: Send, needsTelegram: true },
   { href: "/seguridad", label: "Seguridad y cuenta", icon: ShieldCheck },
 ];
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function NavLinks({ onNavigate, telegram }: { onNavigate?: () => void; telegram: boolean }) {
   const pathname = usePathname();
   return (
     <nav className="flex flex-col gap-0.5">
-      {NAV.map(({ href, label, icon: Icon }) => {
+      {NAV.filter((item) => telegram || !item.needsTelegram).map(({ href, label, icon: Icon }) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
           <Link
@@ -91,10 +92,12 @@ function UserBox({ user, logout }: { user: ShellUser; logout: () => Promise<void
 export function AppShell({
   user,
   logout,
+  telegram,
   children,
 }: {
   user: ShellUser;
   logout: () => Promise<void>;
+  telegram: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -102,7 +105,7 @@ export function AppShell({
     <div className="flex min-h-screen">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 border-r bg-sidebar px-3 py-5 lg:flex">
         <Brand />
-        <NavLinks />
+        <NavLinks telegram={telegram} />
         <div className="mt-auto flex flex-col gap-3">
           <div className="flex items-center justify-between px-3">
             <span className="text-xs text-muted-foreground">Tema</span>
@@ -124,7 +127,7 @@ export function AppShell({
               <SheetContent side="left" className="w-72 gap-6 bg-sidebar p-4">
                 <SheetTitle className="sr-only">Navegación</SheetTitle>
                 <Brand />
-                <NavLinks onNavigate={() => setOpen(false)} />
+                <NavLinks telegram={telegram} onNavigate={() => setOpen(false)} />
                 <div className="mt-auto">
                   <UserBox user={user} logout={logout} />
                 </div>

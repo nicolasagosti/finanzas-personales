@@ -56,6 +56,11 @@ export default function PrivacidadPage() {
           <strong>Los datos que cargás:</strong> tus ingresos, egresos y categorías.
         </p>
         <p>
+          <strong>Si vinculás Telegram:</strong> tu identificador de usuario y de chat de Telegram y tu nombre de usuario,
+          para saber a qué cuenta corresponden tus mensajes. De cada mensaje que le mandás al bot solo guardamos el
+          movimiento resultante (monto, fecha, descripción y categoría). Podés desvincularlo cuando quieras.
+        </p>
+        <p>
           <strong>La demo</strong> usa datos inventados y no pide ningún dato personal.
         </p>
       </Section>

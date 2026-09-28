@@ -7,6 +7,12 @@ export function todayISO(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date());
 }
 
+export function addDays(iso: string, n: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return dt.toISOString().slice(0, 10);
+}
+
 export function monthStart(iso: string): string {
   return iso.slice(0, 7) + "-01";
 }

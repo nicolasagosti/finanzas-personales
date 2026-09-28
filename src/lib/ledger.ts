@@ -10,7 +10,7 @@ export type TransactionInput = {
   id?: string;
   date: string;
   description: string;
-  source: "manual" | "import" | "seed";
+  source: "manual" | "import" | "seed" | "telegram";
   importHash?: string | null;
   postings: PostingInput[];
 };

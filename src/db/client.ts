@@ -29,6 +29,7 @@ const MIGRATIONS = [
   "002_google_auth.sql",
   "003_deferred_posting_fk.sql",
   "004_category_colors.sql",
+  "005_telegram.sql",
 ];
 
 function toSafeNumber(v: string): number {

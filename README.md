@@ -11,6 +11,7 @@ Por dentro es más seria de lo que parece: **libro contable de doble entrada** e
 - **Resumen:** ingresos, egresos y balance del mes; barras de ingresos contra egresos de los últimos 12 meses; donas de colores con los egresos y los ingresos por categoría. Tocar una categoría lleva a sus movimientos.
 - **Movimientos:** alta en segundos (tipo, monto, fecha, descripción y categoría), búsqueda, filtros por mes, tipo y categoría, cambio de categoría y borrado.
 - **Categorías:** cada una con un color propio que se usa en todos los gráficos; se puede cambiar desde una paleta.
+- **Telegram:** le escribís al bot `café 2500`, `12 lucas nafta` o `+150000 sueldo` y lo carga al instante. Entiende "ayer", "lucas", "k" y `#categoría`, aprende de tus recategorizaciones y tiene `/resumen` y `/deshacer`.
 - **Seguridad y cuenta:** pruebas en vivo que intentan romper el aislamiento y la contabilidad contra la base, registro de auditoría y **eliminar mi cuenta**.
 - **Acceso:** demo aislada, login con Google o espacio sin cuenta atado al navegador.
 
@@ -63,6 +64,14 @@ La primera request corre las migraciones (con `pg_advisory_xact_lock`, seguro an
 
 El flujo es OpenID Connect con Authorization Code + **PKCE** (S256), `state` y `nonce` en una cookie `httpOnly` de 10 minutos. El `id_token` se valida contra las claves públicas de Google (firma RS256, issuer, audience, vencimiento, nonce y `email_verified`). El usuario se identifica por el `sub` de Google, no por el email, y la redirección posterior solo acepta rutas internas. Los navegadores integrados en editores (por ejemplo, el de VS Code) pueden cortar el flujo: usá un navegador normal.
 
+### Bot de Telegram (opcional)
+
+1. En Telegram, escribile a **@BotFather** → `/newbot` → elegí nombre y usuario. Te da un token.
+2. Cargá `TELEGRAM_BOT_TOKEN` (y `APP_URL` con tu dominio de producción) en Vercel y volvé a desplegar.
+3. En la app, **Telegram → Vincular mi Telegram**: registra el webhook solo y abre el chat con un código de un solo uso.
+
+El webhook se valida con el header `X-Telegram-Bot-Api-Secret-Token` (derivado de `SESSION_SECRET` con HMAC). Cada mensaje usa su `update_id` como huella, así que si Telegram reintenta un envío el movimiento no se duplica. La respuesta viaja en el cuerpo del webhook (método `sendMessage`), sin llamadas extra a la API. Los mensajes se interpretan con reglas simples, sin IA: monto (formato argentino, "lucas", "k"), fecha relativa, `#categoría`, lo que usaste antes para esa misma descripción y palabras clave por categoría.
+
 ## Arquitectura
 
 ```
@@ -77,11 +86,13 @@ src/
 │   ├── money.ts              # parseo y formato de montos (centavos)
 │   ├── colors.ts             # paleta de categorías
 │   ├── google-oauth.ts       # OIDC: PKCE, state, nonce, verificación del id_token
+│   ├── telegram.ts           # bot: vinculación, alta idempotente, /resumen, /deshacer
+│   ├── telegram-parse.ts     # "12 lucas nafta ayer" → monto, fecha, descripción, categoría
 │   └── reports.ts            # reportes (ninguna query filtra por user_id: lo hace RLS)
 └── app/
     ├── login/ · privacidad/  # públicas
-    ├── api/                  # login con Google y /api/health
-    └── (app)/                # resumen, movimientos, categorías, seguridad y cuenta
+    ├── api/                  # login con Google, webhook de Telegram y /api/health
+    └── (app)/                # resumen, movimientos, categorías, Telegram, seguridad y cuenta
 ```
 
 ### Modelo de datos
@@ -144,6 +155,7 @@ Ingresos en verde agua y egresos en naranja: un par validado para que se disting
 | Integridad | Trigger diferido de balance; FKs compuestas; `CHECK` en montos, colores y longitudes |
 | Sesión | JWT HS256 en cookie `httpOnly`, `SameSite=Lax`, `Secure` en producción; verificación en el proxy y de nuevo contra la base |
 | Login | Google OIDC con PKCE, `state` y `nonce`; `id_token` validado contra el JWKS de Google; sin open redirects |
+| Telegram | Webhook con secreto verificado en tiempo constante; vinculación con código de un solo uso que vence a los 15 min; solo chats privados; escrituras con RLS |
 | HTTP | CSP con nonce por request + `strict-dynamic`; HSTS; `X-Frame-Options: DENY`; `Permissions-Policy`; sin `X-Powered-By` |
 | Entrada | zod en cada server action; SQL siempre parametrizado; `LIKE` con comodines escapados |
 | Privacidad | Política en `/privacidad`; "Eliminar mi cuenta" borra en cascada todos los datos del usuario |
