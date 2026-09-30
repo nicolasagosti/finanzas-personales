@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
+import { useRouter } from "next/navigation";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartLegend,
@@ -172,5 +173,67 @@ export function CategoryDonut({
       </ul>
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+/**
+ * Barras horizontales por categoría para un mes: cada barra con el color de su
+ * categoría y el monto al final. Complementa a la dona: las barras comparan
+ * magnitudes, la dona muestra la proporción.
+ */
+export function CategoryBarChart({
+  data,
+  month,
+  type,
+}: {
+  data: DonutSlice[];
+  month: string;
+  type: "income" | "expense";
+}) {
+  const router = useRouter();
+  const total = data.reduce((a, b) => a + b.total, 0);
+  const tipo = type === "income" ? "ingresos" : "egresos";
+  const config = { total: { label: type === "income" ? "Ingresos" : "Egresos" } } satisfies ChartConfig;
+
+  return (
+    <ChartContainer config={config} className="aspect-auto w-full" style={{ height: data.length * 38 + 8 }}>
+      <BarChart data={data} layout="vertical" margin={{ left: 0, right: 88, top: 4, bottom: 4 }} barCategoryGap={8}>
+        <XAxis type="number" hide domain={[0, "dataMax"]} />
+        <YAxis
+          type="category"
+          dataKey="name"
+          width={150}
+          interval={0}
+          tickLine={false}
+          axisLine={false}
+          tick={{ fill: "var(--foreground)", fontSize: 13 }}
+        />
+        <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.5 }} content={<DonutTooltip total={total} />} />
+        <Bar
+          dataKey="total"
+          radius={[0, 4, 4, 0]}
+          maxBarSize={22}
+          cursor="pointer"
+          onClick={(_, index) => {
+            const slice = data[index];
+            if (slice) router.push(`/movimientos?categoria=${slice.id}&mes=${month.slice(0, 7)}&tipo=${tipo}`);
+          }}
+        >
+          {data.map((d) => (
+            <Cell key={d.id} fill={colorVar(d.color)} />
+          ))}
+          <LabelList
+            dataKey="total"
+            position="right"
+            offset={8}
+            fill="var(--foreground)"
+            fontSize={12}
+            formatter={(v) => formatMoney(Number(v), "ARS", { decimals: false })}
+          />
+        </Bar>
+      </BarChart>
+    </ChartContainer>
   );
 }

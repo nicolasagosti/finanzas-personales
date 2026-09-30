@@ -9,7 +9,7 @@ import { listCategories, listTransactions, monthlyFlows, totalsByCategory } from
 import { parseMonthParam } from "@/lib/view-mode";
 import { cn } from "@/lib/utils";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CategoryDonut, IncomeExpenseChart } from "@/components/charts";
+import { CategoryBarChart, CategoryDonut, IncomeExpenseChart } from "@/components/charts";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { MonthNav } from "@/components/month-nav";
 import { TransactionDialog } from "@/app/(app)/movimientos/transaction-dialog";
@@ -101,6 +101,35 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
               </CardContent>
             </Card>
           </section>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Egresos e ingresos por categoría</CardTitle>
+              <CardDescription>
+                <span className="capitalize">{monthName}</span> · tocá una barra para ver sus movimientos
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-8 lg:grid-cols-2">
+              {(
+                [
+                  { type: "expense", label: "Egresos", data: expenses, total: current.expense, tone: "text-expense-text" },
+                  { type: "income", label: "Ingresos", data: incomes, total: current.income, tone: "text-income-text" },
+                ] as const
+              ).map((g) => (
+                <div key={g.type} className="flex min-w-0 flex-col gap-3">
+                  <div className="flex items-baseline justify-between gap-3 border-b pb-2">
+                    <h3 className={cn("text-sm font-semibold", g.tone)}>{g.label}</h3>
+                    <span className="text-sm font-medium tabular">{formatMoney(g.total, "ARS", { decimals: false })}</span>
+                  </div>
+                  {g.data.length ? (
+                    <CategoryBarChart data={[...g.data]} month={month} type={g.type} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Sin {g.label.toLowerCase()} este mes.</p>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
 
           <section className="grid gap-4 xl:grid-cols-2">
             <Card>
