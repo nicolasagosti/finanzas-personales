@@ -13,31 +13,45 @@ function revalidate() {
   for (const p of ["/categorias", "/movimientos", "/"]) revalidatePath(p);
 }
 
-export async function createCategory(_: ActionState, formData: FormData): Promise<ActionState> {
+const categorySchema = z.object({
+  name: z.string().trim().min(1, "Falta el nombre").max(60),
+  kind: z.enum(["expense", "income"]),
+});
+
+type CreatedCategory = { ok: true; message: string; id: string } | { ok: false; message: string };
+
+async function insertCategory(input: unknown): Promise<CreatedCategory> {
   const user = await requireUser();
-  const parsed = z
-    .object({ name: z.string().trim().min(1, "Falta el nombre").max(60), kind: z.enum(["expense", "income"]) })
-    .safeParse(Object.fromEntries(formData));
+  const parsed = categorySchema.safeParse(input);
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Datos inválidos" };
+  let id: string;
   try {
-    await withUser(user.id, async (q) => {
+    id = await withUser(user.id, async (q) => {
       const used = await q.query<{ color: string | null }>(
         "select color from accounts where kind = $1::account_kind and not is_system",
         [parsed.data.kind],
       );
-      await q.query("insert into accounts (user_id, name, kind, color) values ($1, $2, $3, $4)", [
-        user.id,
-        parsed.data.name,
-        parsed.data.kind,
-        nextColor(used.map((u) => u.color)),
-      ]);
+      const [row] = await q.query<{ id: string }>(
+        "insert into accounts (user_id, name, kind, color) values ($1, $2, $3, $4) returning id",
+        [user.id, parsed.data.name, parsed.data.kind, nextColor(used.map((u) => u.color))],
+      );
+      return row.id;
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     return { ok: false, message: msg.includes("duplicate") ? "Ya existe una categoría con ese nombre" : "No se pudo crear" };
   }
   revalidate();
-  return { ok: true, message: "Categoría creada" };
+  return { ok: true, message: "Categoría creada", id };
+}
+
+export async function createCategory(_: ActionState, formData: FormData): Promise<ActionState> {
+  return insertCategory(Object.fromEntries(formData));
+}
+
+/** Alta desde el diálogo de un movimiento: devuelve el id para dejarla seleccionada. */
+export async function addCategory(name: string, kind: "expense" | "income"): Promise<CreatedCategory> {
+  return insertCategory({ name, kind });
 }
 
 export async function setCategoryColor(id: string, color: string): Promise<ActionState> {

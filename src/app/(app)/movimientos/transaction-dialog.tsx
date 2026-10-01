@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useActionState, useCallback, useContext, useState, useTransition } from "react";
-import { ArrowDownLeft, ArrowUpRight, Plus, Trash2 } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { colorVar } from "@/lib/colors";
 import { formatAmountInput } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { addCategory } from "@/app/(app)/categorias/actions";
 import { createTransaction, deleteTransaction, updateTransaction, type ActionState } from "./actions";
 
 type CategoryOption = { id: string; name: string; kind: string; color: string | null };
@@ -250,9 +251,7 @@ function TransactionForm({
               </button>
             );
           })}
-          {cats.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Creá una categoría de {type === "income" ? "ingreso" : "egreso"} primero.</p>
-          ) : null}
+          <NewCategory type={type} categories={cats} onAdded={(id) => setDraft({ type, categoryId: id })} />
         </div>
       </fieldset>
 
@@ -283,5 +282,84 @@ function DeleteTransactionButton({ transaction, onDeleted }: { transaction: Edit
     >
       <Trash2 /> Eliminar
     </Button>
+  );
+}
+
+/**
+ * Alta de una categoría sin salir del diálogo. No es un <form> (estaría
+ * anidado en el del movimiento): Enter agrega la categoría en vez de guardar.
+ */
+function NewCategory({
+  type,
+  categories,
+  onAdded,
+}: {
+  type: Kind;
+  categories: CategoryOption[];
+  onAdded: (id: string) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [pending, start] = useTransition();
+
+  if (!adding) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAdding(true)}
+        className="flex items-center gap-1 rounded-full border border-dashed px-3 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        <Plus className="size-3.5" /> Nueva
+      </button>
+    );
+  }
+
+  const close = () => {
+    setName("");
+    setAdding(false);
+  };
+  const add = () => {
+    const trimmed = name.trim();
+    if (!trimmed || pending) return;
+    // si ya existe con ese nombre, se elige esa en vez de fallar por duplicada
+    const existing = categories.find((c) => c.name.toLocaleLowerCase("es") === trimmed.toLocaleLowerCase("es"));
+    if (existing) {
+      onAdded(existing.id);
+      return close();
+    }
+    start(async () => {
+      const res = await addCategory(trimmed, type);
+      if (!res.ok) return void toast.error(res.message);
+      toast.success(res.message);
+      onAdded(res.id);
+      close();
+    });
+  };
+
+  return (
+    <div className="flex w-full items-center gap-2">
+      <Input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            add();
+          }
+        }}
+        maxLength={60}
+        disabled={pending}
+        aria-label="Nombre de la categoría nueva"
+        placeholder={type === "income" ? "Nueva categoría de ingreso" : "Nueva categoría de egreso"}
+        className="h-8"
+      />
+      <Button type="button" variant="secondary" onClick={add} disabled={pending || !name.trim()}>
+        Agregar
+      </Button>
+      <Button type="button" variant="ghost" size="icon-sm" aria-label="Cancelar" onClick={close} disabled={pending}>
+        <X />
+      </Button>
+    </div>
   );
 }
