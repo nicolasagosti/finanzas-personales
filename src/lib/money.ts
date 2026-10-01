@@ -38,6 +38,13 @@ export function formatSignedMoney(cents: number, currency: Currency = "ARS"): st
   return cents > 0 ? `+${s}` : cents < 0 ? `−${s}` : s;
 }
 
+/** 1250050 -> "12.500,50", 1250000 -> "12.500": para precargar un input que lee parseAmountToCents. */
+export function formatAmountInput(cents: number): string {
+  const abs = Math.abs(cents);
+  const decimals = abs % 100 === 0 ? 0 : 2;
+  return new Intl.NumberFormat("es-AR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(abs / 100);
+}
+
 export function formatPercent(ratio: number, digits = 1): string {
   return new Intl.NumberFormat("es-AR", {
     style: "percent",

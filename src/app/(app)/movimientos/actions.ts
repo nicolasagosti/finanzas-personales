@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { withUser } from "@/db/client";
+import { withUser, type Queryable } from "@/db/client";
 import { moneyAccountId } from "@/db/seed";
 import { requireUser } from "@/lib/auth";
 import { isValidISODate } from "@/lib/dates";
-import { insertTransactions, simpleTransaction } from "@/lib/ledger";
+import { insertTransactions, simpleTransaction, updateSimpleTransaction } from "@/lib/ledger";
 import { parseAmountToCents } from "@/lib/money";
 
 export type ActionState = { ok: boolean; message: string } | null;
@@ -25,28 +25,40 @@ function revalidateAll() {
   for (const p of ["/", "/movimientos", "/categorias"]) revalidatePath(p);
 }
 
-export async function createTransaction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await requireUser();
+type ParsedForm = { ok: true; data: z.infer<typeof schema>; cents: number } | { ok: false; message: string };
+
+function parseForm(formData: FormData): ParsedForm {
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Datos inválidos" };
-  const f = parsed.data;
-
   let cents: number;
   try {
-    cents = Math.abs(parseAmountToCents(f.amount));
+    cents = Math.abs(parseAmountToCents(parsed.data.amount));
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Monto inválido" };
   }
   if (cents === 0) return { ok: false, message: "El monto no puede ser cero" };
+  return { ok: true, data: parsed.data, cents };
+}
+
+/** Bajo RLS, una categoría de otro usuario simplemente "no existe". */
+async function findCategory(q: Queryable, id: string, type: "expense" | "income"): Promise<string> {
+  const [cat] = await q.query<{ id: string; kind: string }>(
+    "select id, kind::text as kind from accounts where id = $1 and kind in ('income', 'expense')",
+    [id],
+  );
+  if (!cat || cat.kind !== type) throw new Error("Elegí una categoría válida");
+  return cat.id;
+}
+
+export async function createTransaction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const parsed = parseForm(formData);
+  if (!parsed.ok) return parsed;
+  const { data: f, cents } = parsed;
 
   try {
     await withUser(user.id, async (q) => {
-      // Bajo RLS, una categoría de otro usuario simplemente "no existe".
-      const [cat] = await q.query<{ id: string; kind: string }>(
-        "select id, kind::text as kind from accounts where id = $1 and kind in ('income', 'expense')",
-        [f.categoryId],
-      );
-      if (!cat || cat.kind !== f.type) throw new Error("Elegí una categoría válida");
+      const categoryId = await findCategory(q, f.categoryId, f.type);
       const money = await moneyAccountId(q, user.id);
       await insertTransactions(q, user.id, [
         simpleTransaction({
@@ -54,7 +66,7 @@ export async function createTransaction(_: ActionState, formData: FormData): Pro
           description: f.description,
           amount: f.type === "expense" ? -cents : cents,
           moneyAccountId: money,
-          categoryAccountId: cat.id,
+          categoryAccountId: categoryId,
         }),
       ]);
     });
@@ -63,6 +75,32 @@ export async function createTransaction(_: ActionState, formData: FormData): Pro
   }
   revalidateAll();
   return { ok: true, message: f.type === "income" ? "Ingreso guardado" : "Egreso guardado" };
+}
+
+export async function updateTransaction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  if (!uuid.safeParse(id).success) return { ok: false, message: "Id inválido" };
+  const parsed = parseForm(formData);
+  if (!parsed.ok) return parsed;
+  const { data: f, cents } = parsed;
+
+  try {
+    await withUser(user.id, async (q) => {
+      const categoryId = await findCategory(q, f.categoryId, f.type);
+      await updateSimpleTransaction(q, {
+        id,
+        date: f.date,
+        description: f.description,
+        amount: f.type === "expense" ? -cents : cents,
+        categoryAccountId: categoryId,
+      });
+    });
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "No se pudo guardar" };
+  }
+  revalidateAll();
+  return { ok: true, message: "Movimiento actualizado" };
 }
 
 export async function deleteTransaction(id: string): Promise<ActionState> {

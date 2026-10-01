@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMoney, parseAmountToCents } from "./money";
+import { formatAmountInput, formatMoney, parseAmountToCents } from "./money";
 
 describe("parseAmountToCents", () => {
   it.each([
@@ -33,5 +33,16 @@ describe("formatMoney", () => {
   it("formatea en es-AR", () => {
     expect(formatMoney(123456).replace(/\s/g, " ")).toBe("$ 1.234,56");
     expect(formatMoney(-50000, "ARS", { decimals: false }).replace(/\s/g, " ")).toBe("-$ 500");
+  });
+});
+
+describe("formatAmountInput", () => {
+  it.each([1250050, 1250000, 50, 123456700, 99, -680000])("%d vuelve igual al releerlo", (cents) => {
+    expect(parseAmountToCents(formatAmountInput(cents))).toBe(Math.abs(cents));
+  });
+
+  it("muestra decimales solo si hay centavos", () => {
+    expect(formatAmountInput(1250000)).toBe("12.500");
+    expect(formatAmountInput(1250050)).toBe("12.500,50");
   });
 });

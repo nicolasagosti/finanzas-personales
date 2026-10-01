@@ -13,8 +13,8 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/native-select";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CategoryCell, DeleteButton } from "./row-actions";
-import { TransactionDialog } from "./transaction-dialog";
+import { CategoryCell, DeleteButton, EditableRow } from "./row-actions";
+import { EditTransactionButton, TransactionDialog, TransactionEditor } from "./transaction-dialog";
 
 export const metadata: Metadata = { title: "Movimientos" };
 
@@ -39,6 +39,7 @@ export default async function MovimientosPage({ searchParams }: PageProps<"/movi
     categories: await listCategories(q),
   }));
 
+  const today = todayISO();
   const pages = Math.max(1, Math.ceil(list.total / PAGE_SIZE));
   const filtered = Boolean(month || categoryId || type || search);
   const hrefPage = (p: number) => {
@@ -54,7 +55,7 @@ export default async function MovimientosPage({ searchParams }: PageProps<"/movi
         title="Movimientos"
         description={`${list.total.toLocaleString("es-AR")} ${list.total === 1 ? "movimiento" : "movimientos"}${filtered ? " con estos filtros" : ""}`}
       >
-        <TransactionDialog categories={categories} today={todayISO()} />
+        <TransactionDialog categories={categories} today={today} />
       </PageHeader>
 
       <form method="get" className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_auto_auto]">
@@ -98,62 +99,66 @@ export default async function MovimientosPage({ searchParams }: PageProps<"/movi
           {filtered ? "Probá con otro mes o limpiá los filtros." : "Cargá tu primer ingreso o egreso con “Nuevo movimiento”."}
         </EmptyState>
       ) : (
-        <Card className="gap-0 overflow-hidden py-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="w-20 pl-4">Fecha</TableHead>
-                <TableHead>Descripción</TableHead>
-                <TableHead className="hidden md:table-cell">Categoría</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
-                <TableHead className="w-10 pr-4">
-                  <span className="sr-only">Acciones</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {list.rows.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="pl-4 text-muted-foreground tabular">{dayLabel(t.date)}</TableCell>
-                  <TableCell className="max-w-[20rem]">
-                    <span className="block truncate font-medium">{t.description}</span>
-                    <span className="block truncate text-xs text-muted-foreground md:hidden">{t.category}</span>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <CategoryCell transactionId={t.id} categoryId={t.categoryId} color={t.color} kind={t.type} categories={categories} />
-                  </TableCell>
-                  <TableCell
-                    className={cn(
-                      "text-right font-medium tabular",
-                      t.type === "income" ? "text-income-text" : "text-expense-text",
-                    )}
-                  >
-                    {t.type === "income" ? "+" : ""}
-                    {formatMoney(t.amount, "ARS")}
-                  </TableCell>
-                  <TableCell className="pr-4">
-                    <DeleteButton id={t.id} description={t.description} />
-                  </TableCell>
+        <TransactionEditor categories={categories} today={today}>
+          <Card className="gap-0 overflow-hidden py-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="w-20 pl-4">Fecha</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead className="hidden md:table-cell">Categoría</TableHead>
+                  <TableHead className="text-right">Monto</TableHead>
+                  <TableHead className="w-10 pr-4">
+                    <span className="sr-only">Acciones</span>
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {pages > 1 ? (
-            <div className="flex items-center justify-between border-t px-4 py-3 text-sm text-muted-foreground">
-              <span>
-                Página {page} de {pages}
-              </span>
-              <div className="flex gap-1">
-                <Button variant="outline" size="sm" disabled={page <= 1} render={page > 1 ? <Link href={hrefPage(page - 1)} /> : undefined} nativeButton={page <= 1}>
-                  <ChevronLeft /> Anterior
-                </Button>
-                <Button variant="outline" size="sm" disabled={page >= pages} render={page < pages ? <Link href={hrefPage(page + 1)} /> : undefined} nativeButton={page >= pages}>
-                  Siguiente <ChevronRight />
-                </Button>
+              </TableHeader>
+              <TableBody>
+                {list.rows.map((t) => (
+                  <EditableRow key={t.id} transaction={t}>
+                    <TableCell className="pl-4 text-muted-foreground tabular">{dayLabel(t.date)}</TableCell>
+                    <TableCell className="max-w-[20rem]">
+                      <EditTransactionButton transaction={t} className="block w-full min-w-0 rounded-sm">
+                        <span className="block truncate font-medium">{t.description}</span>
+                        <span className="block truncate text-xs text-muted-foreground md:hidden">{t.category}</span>
+                      </EditTransactionButton>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <CategoryCell transactionId={t.id} categoryId={t.categoryId} color={t.color} kind={t.type} categories={categories} />
+                    </TableCell>
+                    <TableCell
+                      className={cn(
+                        "text-right font-medium tabular",
+                        t.type === "income" ? "text-income-text" : "text-expense-text",
+                      )}
+                    >
+                      {t.type === "income" ? "+" : ""}
+                      {formatMoney(t.amount, "ARS")}
+                    </TableCell>
+                    <TableCell className="pr-4">
+                      <DeleteButton id={t.id} description={t.description} />
+                    </TableCell>
+                  </EditableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {pages > 1 ? (
+              <div className="flex items-center justify-between border-t px-4 py-3 text-sm text-muted-foreground">
+                <span>
+                  Página {page} de {pages}
+                </span>
+                <div className="flex gap-1">
+                  <Button variant="outline" size="sm" disabled={page <= 1} render={page > 1 ? <Link href={hrefPage(page - 1)} /> : undefined} nativeButton={page <= 1}>
+                    <ChevronLeft /> Anterior
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={page >= pages} render={page < pages ? <Link href={hrefPage(page + 1)} /> : undefined} nativeButton={page >= pages}>
+                    Siguiente <ChevronRight />
+                  </Button>
+                </div>
               </div>
-            </div>
-          ) : null}
-        </Card>
+            ) : null}
+          </Card>
+        </TransactionEditor>
       )}
     </>
   );

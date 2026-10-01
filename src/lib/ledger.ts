@@ -86,6 +86,44 @@ export async function insertTransactions(
   return { inserted: ids.size, skipped: txs.length - ids.size, insertedIds: [...ids] };
 }
 
+/**
+ * Reescribe un gasto/ingreso simple (dinero contra una categoría): fecha,
+ * descripción, monto y categoría. Los asientos se actualizan en el lugar, así
+ * el cambio queda en la auditoría. La categoría puede ser de otro tipo
+ * (egreso ↔ ingreso): el signo lo da `amount`, igual que en simpleTransaction.
+ */
+export async function updateSimpleTransaction(
+  q: Queryable,
+  opts: { id: string; date: string; description: string; amount: number; categoryAccountId: string },
+): Promise<void> {
+  if (!Number.isSafeInteger(opts.amount) || opts.amount === 0) throw new Error("El monto no puede ser cero");
+  const postings = await q.query<{ id: string; isCategory: boolean; currency: string }>(
+    `select p.id, a.kind in ('income', 'expense') as "isCategory", p.currency
+     from postings p join accounts a on a.id = p.account_id
+     where p.transaction_id = $1`,
+    [opts.id],
+  );
+  if (postings.length === 0) throw new Error("No encontrado");
+  const category = postings.filter((p) => p.isCategory);
+  if (postings.length !== 2 || category.length !== 1) throw new Error("Este movimiento no se puede editar");
+
+  const updated = await q.query(
+    "update transactions set occurred_on = $2, description = $3 where id = $1 returning id",
+    [opts.id, opts.date, opts.description.slice(0, 200)],
+  );
+  if (!updated.length) throw new Error("No encontrado");
+  await q.query("update postings set amount = $2 where transaction_id = $1 and id <> $3", [
+    opts.id,
+    opts.amount,
+    category[0].id,
+  ]);
+  await q.query("update postings set amount = $2, account_id = $3 where id = $1", [
+    category[0].id,
+    -opts.amount,
+    opts.categoryAccountId,
+  ]);
+}
+
 /** Gasto/ingreso simple: una cuenta de dinero contra una categoría. */
 export function simpleTransaction(opts: {
   date: string;

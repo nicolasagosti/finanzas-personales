@@ -4,10 +4,27 @@ import { useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { TableRow } from "@/components/ui/table";
 import { colorVar } from "@/lib/colors";
 import { deleteTransaction, recategorize } from "./actions";
+import { useEditTransaction, type EditableTransaction } from "./transaction-dialog";
 
 type Option = { id: string; name: string; kind: string; color: string | null };
+
+/** Tocar la fila abre la edición, salvo que se toque uno de sus controles. */
+export function EditableRow({ transaction, children }: { transaction: EditableTransaction; children: React.ReactNode }) {
+  const edit = useEditTransaction();
+  return (
+    <TableRow
+      className="cursor-pointer"
+      onClick={(e) => {
+        if (!(e.target as Element).closest("button, select, a")) edit(transaction);
+      }}
+    >
+      {children}
+    </TableRow>
+  );
+}
 
 export function CategoryCell({
   transactionId,

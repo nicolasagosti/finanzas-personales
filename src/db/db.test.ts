@@ -8,7 +8,7 @@ process.env.PGLITE_DIR = "memory://";
 
 const { asOwner, withUser } = await import("./client");
 const { createUserWithDefaults, seedDemoData } = await import("./seed");
-const { insertTransactions, simpleTransaction } = await import("@/lib/ledger");
+const { insertTransactions, simpleTransaction, updateSimpleTransaction } = await import("@/lib/ledger");
 
 let alice: { userId: string; accounts: Record<string, string> };
 let bob: { userId: string; accounts: Record<string, string> };
@@ -94,6 +94,53 @@ describe("partida doble en la base", () => {
     const second = await withUser(bob.userId, (q) => insertTransactions(q, bob.userId, [tx()]));
     expect(first).toMatchObject({ inserted: 1, skipped: 0 });
     expect(second).toMatchObject({ inserted: 0, skipped: 1 });
+  });
+});
+
+describe("editar un movimiento", () => {
+  const postingsOf = (id: string) =>
+    withUser(bob.userId, (q) =>
+      q.query<{ account_id: string; amount: number }>(
+        "select account_id, amount from postings where transaction_id = $1 order by amount",
+        [id],
+      ),
+    );
+
+  it("cambia fecha, descripción, monto y categoría, incluso de egreso a ingreso", async () => {
+    const { insertedIds: [id] } = await withUser(bob.userId, (q) =>
+      insertTransactions(q, bob.userId, [
+        simpleTransaction({ date: "2026-09-03", description: "Super", amount: -500000, moneyAccountId: bob.accounts.dinero, categoryAccountId: bob.accounts.super }),
+      ]),
+    );
+
+    await withUser(bob.userId, (q) =>
+      updateSimpleTransaction(q, { id, date: "2026-09-04", description: "Verdulería", amount: -650000, categoryAccountId: bob.accounts.comida }),
+    );
+    expect(await postingsOf(id)).toEqual([
+      { account_id: bob.accounts.dinero, amount: -650000 },
+      { account_id: bob.accounts.comida, amount: 650000 },
+    ]);
+    const [tx] = await withUser(bob.userId, (q) =>
+      q.query("select occurred_on, description from transactions where id = $1", [id]),
+    );
+    expect(tx).toEqual({ occurred_on: "2026-09-04", description: "Verdulería" });
+
+    await withUser(bob.userId, (q) =>
+      updateSimpleTransaction(q, { id, date: "2026-09-04", description: "Reintegro", amount: 650000, categoryAccountId: bob.accounts.otrosIngresos }),
+    );
+    expect(await postingsOf(id)).toEqual([
+      { account_id: bob.accounts.otrosIngresos, amount: -650000 },
+      { account_id: bob.accounts.dinero, amount: 650000 },
+    ]);
+  });
+
+  it("no puede tocar movimientos de otro usuario", async () => {
+    const [{ id }] = await withUser(alice.userId, (q) => q.query<{ id: string }>("select id from transactions limit 1"));
+    await expect(
+      withUser(bob.userId, (q) =>
+        updateSimpleTransaction(q, { id, date: "2026-09-04", description: "x", amount: -100, categoryAccountId: bob.accounts.super }),
+      ),
+    ).rejects.toThrow(/No encontrado/);
   });
 });
 

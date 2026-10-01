@@ -12,12 +12,13 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { CategoryBarChart, CategoryDonut, IncomeExpenseChart } from "@/components/charts";
 import { EmptyState, PageHeader } from "@/components/page-header";
 import { MonthNav } from "@/components/month-nav";
-import { TransactionDialog } from "@/app/(app)/movimientos/transaction-dialog";
+import { EditTransactionButton, TransactionDialog, TransactionEditor } from "@/app/(app)/movimientos/transaction-dialog";
 
 export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   const user = await requireUser();
   const month = parseMonthParam(await searchParams);
-  const currentMonth = monthStart(todayISO());
+  const today = todayISO();
+  const currentMonth = monthStart(today);
   const months = monthRange(addMonths(month, -11), month);
 
   const { flows, expenses, incomes, recent, categories } = await withUser(user.id, async (q) => {
@@ -42,7 +43,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
     <>
       <PageHeader title="Resumen" description={<span className="capitalize">{monthName}</span>}>
         <MonthNav month={month} currentMonth={currentMonth} />
-        <TransactionDialog categories={categories} today={todayISO()} />
+        <TransactionDialog categories={categories} today={today} />
       </PageHeader>
 
       {recent.total === 0 ? (
@@ -156,30 +157,37 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
                 </CardAction>
               </CardHeader>
               <CardContent>
-                <ul className="divide-y">
-                  {recent.rows.map((t) => (
-                    <li key={t.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span className="size-2.5 shrink-0 rounded-full" style={{ background: colorVar(t.color) }} />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{t.description}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {dayLabel(t.date)} · {t.category}
-                          </p>
-                        </div>
-                      </div>
-                      <span
-                        className={cn(
-                          "shrink-0 text-sm font-medium tabular",
-                          t.type === "income" ? "text-income-text" : "text-expense-text",
-                        )}
-                      >
-                        {t.type === "income" ? "+" : ""}
-                        {formatMoney(t.amount, "ARS")}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <TransactionEditor categories={categories} today={today}>
+                  <ul className="divide-y">
+                    {recent.rows.map((t) => (
+                      <li key={t.id} className="py-1 first:pt-0 last:pb-0">
+                        <EditTransactionButton
+                          transaction={t}
+                          className="-mx-2 flex w-[calc(100%+1rem)] items-center justify-between gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
+                        >
+                          <span className="flex min-w-0 items-center gap-3">
+                            <span className="size-2.5 shrink-0 rounded-full" style={{ background: colorVar(t.color) }} />
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-medium">{t.description}</span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {dayLabel(t.date)} · {t.category}
+                              </span>
+                            </span>
+                          </span>
+                          <span
+                            className={cn(
+                              "shrink-0 text-sm font-medium tabular",
+                              t.type === "income" ? "text-income-text" : "text-expense-text",
+                            )}
+                          >
+                            {t.type === "income" ? "+" : ""}
+                            {formatMoney(t.amount, "ARS")}
+                          </span>
+                        </EditTransactionButton>
+                      </li>
+                    ))}
+                  </ul>
+                </TransactionEditor>
               </CardContent>
             </Card>
           </section>
